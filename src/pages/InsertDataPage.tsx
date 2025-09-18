@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 import dbService from '../services/dbService';
-import { Escola, Serie, Turma, Aluno, Provao, Questao, Alternativa } from '../types';
+import type { Escola, Serie, Turma, Aluno, Provao, Questao, Alternativa } from '../types';
 
 import Card from '../components/Card';
 import Button from '../components/Button';

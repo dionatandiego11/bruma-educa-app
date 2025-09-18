@@ -1,6 +1,6 @@
 // src/services/dbService.ts
 
-import {
+import type {
   Escola, Serie, Turma, Professor, Aluno, Matricula,
   Provao, Questao, Gabarito, Score, Disciplina, Alternativa
 } from '../types';
