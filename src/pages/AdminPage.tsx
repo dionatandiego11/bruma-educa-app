@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, School, Users, BookOpen, UserCheck, GraduationCap, FileText, Save, Plus, X } from 'lucide-react';
 
 import dbService from '../services/dbService';
-import { Escola, Serie, Turma, Professor, Aluno, Provao, Questao, Disciplina, Alternativa } from '../types';
+import type { Escola, Serie, Turma, Professor, Aluno, Provao, Questao, Disciplina, Alternativa } from '../types';
 
 import Card from '../components/Card';
 import Button from '../components/Button';
