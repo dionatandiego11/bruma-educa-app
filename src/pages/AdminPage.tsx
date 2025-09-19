@@ -2,53 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, School, Users, BookOpen, UserCheck, GraduationCap, FileText, Save, Plus, X } from 'lucide-react';
-
-// Supondo que dbService e os tipos estão definidos em outros lugares
-// import dbService from '../services/dbService';
-// import type { Escola, Serie, Turma, Professor, Aluno, Provao, Questao, Disciplina, Alternativa } from '../types';
-
-// Mock para dbService e tipos para o código funcionar de forma autônoma
-const dbService = {
-    getEscolas: () => [{ id: '1', nome: 'Escola Padrão' }],
-    getProfessores: () => [{ id: 'p1', nome: 'Prof. João' }],
-    getAlunos: () => [{ id: 'a1', nome: 'Aluno José', matricula: '123' }],
-    getSeriesByEscola: (escolaId: string) => [{ id: 's1', nome: '9º Ano', escolaId }],
-    getTurmasBySerie: (serieId: string) => [{ id: 't1', nome: 'Turma A', serieId, professorIds: ['p1'] }],
-    getAlunosByTurma: (turmaId: string) => [{ id: 'a1', nome: 'Aluno José', matricula: '123' }],
-    getProfessoresByTurma: (turmaId: string) => [{ id: 'p1', nome: 'Prof. João' }],
-    getProvoesByTurma: (turmaId: string) => [{ id: 'pr1', nome: 'Provão de Português', turmaId }],
-    getQuestoesByProvao: (provaoId: string) => [{ id: 'q1', provaoId, disciplina: 'Português', descricao: 'Qual a capital do Brasil?', habilidade_codigo: 'EF01GE01' }],
-    getGabaritoByQuestao: (questaoId: string) => ({ questaoId, respostaCorreta: 'A' as Alternativa }),
-    addEscola: (escola: any) => console.log('Adicionando escola', escola),
-    addSerie: (serie: any) => console.log('Adicionando série', serie),
-    addTurma: (turma: any) => console.log('Adicionando turma', turma),
-    addProfessor: (prof: any) => console.log('Adicionando professor', prof),
-    addAluno: (aluno: any) => console.log('Adicionando aluno', aluno),
-    addMatricula: (mat: any) => console.log('Adicionando matrícula', mat),
-    removeMatricula: (alunoId: string, turmaId: string) => console.log(`Removendo matrícula do aluno ${alunoId} da turma ${turmaId}`),
-    updateTurma: (turmaId: string, data: any) => console.log(`Atualizando turma ${turmaId}`, data),
-    addProvao: (provao: any) => console.log('Adicionando provão', provao),
-    addQuestao: (q: any) => console.log('Adicionando questão', q),
-    addGabarito: (gab: any) => console.log('Adicionando gabarito', gab),
-};
-
-type Alternativa = 'A' | 'B' | 'C' | 'D';
-type Disciplina = 'Português' | 'Matemática';
-interface Base { id: string; nome: string; }
-interface Escola extends Base {}
-interface Professor extends Base {}
-interface Aluno extends Base { matricula: string; }
-interface Serie extends Base { escolaId: string; }
-interface Turma extends Base { serieId: string; professorIds: string[]; }
-interface Provao extends Base { turmaId: string; }
-interface Questao { id: string; provaoId: string; disciplina: Disciplina; descricao: string; habilidade_codigo: string; }
-
-// Componentes Mock
-const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">{children}</div>;
-const Button: React.FC<any> = ({ children, ...props }) => <button {...props} className={`flex items-center justify-center px-4 py-2 rounded-lg font-semibold text-white transition-colors ${props.variant === 'success' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-600 hover:bg-blue-700'} ${props.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>{children}</button>;
-const Input: React.FC<any> = (props) => <input {...props} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100" />;
-const Select: React.FC<any> = ({ children, ...props }) => <select {...props} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-gray-100">{children}</select>;
-
+import dbService from '../services/dbService';
+import type { Escola, Serie, Turma, Professor, Aluno, Provao, Questao, Disciplina, Alternativa } from '../types';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import Select from '../components/Select';
 
 interface AdminPageProps {
   onNavigate: (page: 'home' | 'admin' | 'insert') => void;
@@ -103,68 +62,100 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
     // Load initial data
     useEffect(() => {
-        setEscolas(dbService.getEscolas());
-        setProfessores(dbService.getProfessores());
-        setAlunos(dbService.getAlunos());
-    }, []);
+        const loadInitialData = async () => {
+            try {
+                setEscolas(await dbService.getEscolas());
+                setProfessores(await dbService.getProfessores());
+                setAlunos(await dbService.getAlunos());
+            } catch (error) {
+                showNotification('Erro ao carregar dados iniciais.', 'error');
+            }
+        };
+        loadInitialData();
+    }, [showNotification]);
 
     // Load series when school changes
     useEffect(() => {
-        if (selectedEscola) {
-        setSeriesOfSelectedEscola(dbService.getSeriesByEscola(selectedEscola));
-        } else {
-        setSeriesOfSelectedEscola([]);
-        }
+        const fetchSeries = async () => {
+            if (selectedEscola) {
+                try {
+                    setSeriesOfSelectedEscola(await dbService.getSeriesByEscola(selectedEscola));
+                } catch (error) {
+                    showNotification('Erro ao carregar séries.', 'error');
+                }
+            } else {
+                setSeriesOfSelectedEscola([]);
+            }
+        };
+        fetchSeries();
         setSelectedSerie('');
         setSelectedTurma('');
         setSelectedProvao('');
-    }, [selectedEscola]);
+    }, [selectedEscola, showNotification]);
 
     // Load turmas when serie changes
     useEffect(() => {
-        if (selectedSerie) {
-        const turmas = dbService.getTurmasBySerie(selectedSerie);
-        setTurmasOfSelectedSerie(turmas);
-        setProvoes(turmas.length > 0 ? dbService.getProvoesByTurma(turmas[0].id) : []);
-        } else {
-        setTurmasOfSelectedSerie([]);
-        setProvoes([]);
-        }
+        const fetchTurmas = async () => {
+            if (selectedSerie) {
+                try {
+                    setTurmasOfSelectedSerie(await dbService.getTurmasBySerie(selectedSerie));
+                } catch (error) {
+                    showNotification('Erro ao carregar turmas.', 'error');
+                }
+            } else {
+                setTurmasOfSelectedSerie([]);
+            }
+        };
+        fetchTurmas();
         setSelectedTurma('');
         setSelectedProvao('');
-    }, [selectedSerie]);
+    }, [selectedSerie, showNotification]);
 
     // Load turma details when turma changes
     useEffect(() => {
-        if (selectedTurma) {
-        setAlunosNaTurma(dbService.getAlunosByTurma(selectedTurma));
-        setProfessoresNaTurma(dbService.getProfessoresByTurma(selectedTurma));
-        setProvoes(dbService.getProvoesByTurma(selectedTurma));
-        } else {
-        setAlunosNaTurma([]);
-        setProfessoresNaTurma([]);
-        setProvoes([]);
-        }
-    }, [selectedTurma]);
+        const fetchTurmaDetails = async () => {
+            if (selectedTurma) {
+                try {
+                    setAlunosNaTurma(await dbService.getAlunosByTurma(selectedTurma));
+                    setProfessoresNaTurma(await dbService.getProfessoresByTurma(selectedTurma));
+                    setProvoes(await dbService.getProvoesByTurma(selectedTurma));
+                } catch (error) {
+                    showNotification('Erro ao carregar detalhes da turma.', 'error');
+                }
+            } else {
+                setAlunosNaTurma([]);
+                setProfessoresNaTurma([]);
+                setProvoes([]);
+            }
+        };
+        fetchTurmaDetails();
+    }, [selectedTurma, showNotification]);
 
     // Load questoes when provao changes
     useEffect(() => {
-        if (selectedProvao) {
-        const questoesDoProvao = dbService.getQuestoesByProvao(selectedProvao);
-        setQuestoes(questoesDoProvao);
-        const loadedGabaritos = new Map<string, Alternativa>();
-        questoesDoProvao.forEach(q => {
-            const gabarito = dbService.getGabaritoByQuestao(q.id);
-            if (gabarito) {
-            loadedGabaritos.set(q.id, gabarito.respostaCorreta);
+        const fetchQuestoes = async () => {
+            if (selectedProvao) {
+                try {
+                    const questoesDoProvao = await dbService.getQuestoesByProvao(selectedProvao);
+                    setQuestoes(questoesDoProvao);
+                    const loadedGabaritos = new Map<string, Alternativa>();
+                    for (const q of questoesDoProvao) {
+                        const gabarito = await dbService.getGabaritoByQuestao(q.id);
+                        if (gabarito) {
+                            loadedGabaritos.set(q.id, gabarito.resposta_correta);
+                        }
+                    }
+                    setGabaritos(loadedGabaritos);
+                } catch (error) {
+                    showNotification('Erro ao carregar questões.', 'error');
+                }
+            } else {
+                setQuestoes([]);
+                setGabaritos(new Map());
             }
-        });
-        setGabaritos(loadedGabaritos);
-        } else {
-        setQuestoes([]);
-        setGabaritos(new Map());
-        }
-    }, [selectedProvao]);
+        };
+        fetchQuestoes();
+    }, [selectedProvao, showNotification]);
 
     // Available options
     const alunosDisponiveis = useMemo(() => {
@@ -178,144 +169,184 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }, [professores, professoresNaTurma]);
 
     // Handlers
-    const handleAddEscola = (e: React.FormEvent) => {
+    const handleAddEscola = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newEscola.trim()) {
-        dbService.addEscola({ nome: newEscola.trim() });
-        setNewEscola('');
-        setEscolas(dbService.getEscolas());
-        showNotification('Escola adicionada com sucesso!');
-        }
-    };
-
-    const handleAddSerie = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newSerie.trim() && selectedEscola) {
-        dbService.addSerie({ nome: newSerie.trim(), escolaId: selectedEscola });
-        setNewSerie('');
-        setSeriesOfSelectedEscola(dbService.getSeriesByEscola(selectedEscola));
-        showNotification('Série adicionada com sucesso!');
-        }
-    };
-
-    const handleAddTurma = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newTurma.trim() && selectedSerie) {
-        dbService.addTurma({ nome: newTurma.trim(), serieId: selectedSerie, professorIds: [] });
-        setNewTurma('');
-        setTurmasOfSelectedSerie(dbService.getTurmasBySerie(selectedSerie));
-        showNotification('Turma adicionada com sucesso!');
-        }
-    };
-
-    const handleAddProfessor = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newProfessor.trim()) {
-        dbService.addProfessor({ nome: newProfessor.trim() });
-        setNewProfessor('');
-        setProfessores(dbService.getProfessores());
-        showNotification('Professor adicionado com sucesso!');
-        }
-    };
-
-    const handleAddAluno = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newAluno.trim() && newAlunoMatricula.trim()) {
-        dbService.addAluno({ nome: newAluno.trim(), matricula: newAlunoMatricula.trim() });
-        setNewAluno('');
-        setNewAlunoMatricula('');
-        setAlunos(dbService.getAlunos());
-        showNotification('Aluno adicionado com sucesso!');
-        }
-    };
-
-    const handleMatricularAluno = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (alunoParaMatricular && selectedTurma) {
-        dbService.addMatricula({ alunoId: alunoParaMatricular, turmaId: selectedTurma });
-        setAlunosNaTurma(dbService.getAlunosByTurma(selectedTurma));
-        setAlunoParaMatricular('');
-        showNotification('Aluno matriculado com sucesso!');
-        }
-    };
-    
-    const handleDesmatricularAluno = (alunoId: string) => {
-        if (selectedTurma) {
-            dbService.removeMatricula(alunoId, selectedTurma);
-            setAlunosNaTurma(dbService.getAlunosByTurma(selectedTurma));
-            showNotification('Aluno desmatriculado com sucesso!', 'success');
-        }
-    };
-
-    const handleAssociarProfessor = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (professorParaAssociar && selectedTurma) {
-        const turma = dbService.getTurmasBySerie(selectedSerie).find(t => t.id === selectedTurma);
-        if (turma) {
-            const updatedProfessorIds = [...turma.professorIds, professorParaAssociar];
-            dbService.updateTurma(selectedTurma, { professorIds: updatedProfessorIds });
-            setProfessoresNaTurma(dbService.getProfessoresByTurma(selectedTurma));
-            setProfessorParaAssociar('');
-            showNotification('Professor associado com sucesso!');
-        }
-        }
-    };
-
-    const handleDesassociarProfessor = (professorId: string) => {
-        if (selectedTurma && selectedSerie) {
-            const turma = dbService.getTurmasBySerie(selectedSerie).find(t => t.id === selectedTurma);
-            if (turma) {
-                const updatedProfessorIds = turma.professorIds.filter(id => id !== professorId);
-                dbService.updateTurma(selectedTurma, { professorIds: updatedProfessorIds });
-                setProfessoresNaTurma(dbService.getProfessoresByTurma(selectedTurma));
-                showNotification('Professor desassociado com sucesso!', 'success');
+            try {
+                await dbService.addEscola({ nome: newEscola.trim() });
+                setNewEscola('');
+                setEscolas(await dbService.getEscolas());
+                showNotification('Escola adicionada com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar escola.', 'error');
             }
         }
     };
 
-    const handleAddProvao = (e: React.FormEvent) => {
+    const handleAddSerie = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newSerie.trim() && selectedEscola) {
+            try {
+                await dbService.addSerie({ nome: newSerie.trim(), escolaId: selectedEscola });
+                setNewSerie('');
+                setSeriesOfSelectedEscola(await dbService.getSeriesByEscola(selectedEscola));
+                showNotification('Série adicionada com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar série.', 'error');
+            }
+        }
+    };
+
+    const handleAddTurma = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newTurma.trim() && selectedSerie) {
+            try {
+                await dbService.addTurma({ nome: newTurma.trim(), serieId: selectedSerie, professorIds: [] });
+                setNewTurma('');
+                setTurmasOfSelectedSerie(await dbService.getTurmasBySerie(selectedSerie));
+                showNotification('Turma adicionada com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar turma.', 'error');
+            }
+        }
+    };
+
+    const handleAddProfessor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newProfessor.trim()) {
+            try {
+                await dbService.addProfessor({ nome: newProfessor.trim() });
+                setNewProfessor('');
+                setProfessores(await dbService.getProfessores());
+                showNotification('Professor adicionado com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar professor.', 'error');
+            }
+        }
+    };
+
+    const handleAddAluno = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newAluno.trim() && newAlunoMatricula.trim()) {
+            try {
+                await dbService.addAluno({ nome: newAluno.trim(), matricula: newAlunoMatricula.trim() });
+                setNewAluno('');
+                setNewAlunoMatricula('');
+                setAlunos(await dbService.getAlunos());
+                showNotification('Aluno adicionado com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar aluno.', 'error');
+            }
+        }
+    };
+
+    const handleMatricularAluno = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (alunoParaMatricular && selectedTurma) {
+            try {
+                await dbService.addMatricula({ alunoId: alunoParaMatricular, turmaId: selectedTurma });
+                setAlunosNaTurma(await dbService.getAlunosByTurma(selectedTurma));
+                setAlunoParaMatricular('');
+                showNotification('Aluno matriculado com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao matricular aluno.', 'error');
+            }
+        }
+    };
+    
+    const handleDesmatricularAluno = async (alunoId: string) => {
+        if (selectedTurma) {
+            try {
+                await dbService.removeMatricula({ alunoId, turmaId: selectedTurma });
+                setAlunosNaTurma(await dbService.getAlunosByTurma(selectedTurma));
+                showNotification('Aluno desmatriculado com sucesso!', 'success');
+            } catch (error) {
+                showNotification('Erro ao desmatricular aluno.', 'error');
+            }
+        }
+    };
+
+    const handleAssociarProfessor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (professorParaAssociar && selectedTurma) {
+            try {
+                await dbService.associateProfessorToTurma({ professorId: professorParaAssociar, turmaId: selectedTurma });
+                setProfessoresNaTurma(await dbService.getProfessoresByTurma(selectedTurma));
+                setProfessorParaAssociar('');
+                showNotification('Professor associado com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao associar professor.', 'error');
+            }
+        }
+    };
+
+    const handleDesassociarProfessor = async (professorId: string) => {
+        if (selectedTurma) {
+            try {
+                await dbService.desassociateProfessorFromTurma({ professorId, turmaId: selectedTurma });
+                setProfessoresNaTurma(await dbService.getProfessoresByTurma(selectedTurma));
+                showNotification('Professor desassociado com sucesso!', 'success');
+            } catch (error) {
+                showNotification('Erro ao desassociar professor.', 'error');
+            }
+        }
+    };
+
+    const handleAddProvao = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newProvaoName.trim()) {
-        showNotification('Por favor, insira um nome para o provão.', 'error');
-        return;
+            showNotification('Por favor, insira um nome para o provão.', 'error');
+            return;
         }
         if (!selectedTurma) {
-        showNotification('Selecione uma turma para o provão.', 'error');
-        return;
+            showNotification('Selecione uma turma para o provão.', 'error');
+            return;
         }
 
-        dbService.addProvao({
-        nome: newProvaoName.trim(),
-        turmaId: selectedTurma,
-        });
+        try {
+            await dbService.addProvao({
+                nome: newProvaoName.trim(),
+                turmaId: selectedTurma,
+            });
 
-        setNewProvaoName('');
-        setProvoes(dbService.getProvoesByTurma(selectedTurma));
-        showNotification('Provão criado com sucesso!');
+            setNewProvaoName('');
+            setProvoes(await dbService.getProvoesByTurma(selectedTurma));
+            showNotification('Provão criado com sucesso!');
+        } catch (error) {
+            showNotification('Erro ao criar provão.', 'error');
+        }
     };
 
-    const handleAddQuestao = (e: React.FormEvent) => {
+    const handleAddQuestao = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newQuestaoDesc.trim() && newQuestaoHab.trim() && selectedProvao) {
-        dbService.addQuestao({
-            provaoId: selectedProvao,
-            disciplina: newQuestaoDisciplina,
-            descricao: newQuestaoDesc.trim(),
-            habilidade_codigo: newQuestaoHab.trim(),
-        });
-        setNewQuestaoDesc('');
-        setNewQuestaoHab('');
-        setQuestoes(dbService.getQuestoesByProvao(selectedProvao));
-        showNotification('Questão adicionada com sucesso!');
+            try {
+                await dbService.addQuestao({
+                    provaoId: selectedProvao,
+                    disciplina: newQuestaoDisciplina,
+                    descricao: newQuestaoDesc.trim(),
+                    habilidade_codigo: newQuestaoHab.trim(),
+                });
+                setNewQuestaoDesc('');
+                setNewQuestaoHab('');
+                setQuestoes(await dbService.getQuestoesByProvao(selectedProvao));
+                showNotification('Questão adicionada com sucesso!');
+            } catch (error) {
+                showNotification('Erro ao adicionar questão.', 'error');
+            }
         }
     };
 
-    const handleSetGabarito = (questaoId: string, resposta: Alternativa) => {
-        dbService.addGabarito({ questaoId, respostaCorreta: resposta });
-        const newGabaritos = new Map(gabaritos);
-        newGabaritos.set(questaoId, resposta);
-        setGabaritos(newGabaritos);
-        showNotification('Gabarito salvo com sucesso!', 'success');
+    const handleSetGabarito = async (questaoId: string, resposta: Alternativa) => {
+        try {
+            await dbService.addGabarito({ questaoId, respostaCorreta: resposta });
+            const newGabaritos = new Map(gabaritos);
+            newGabaritos.set(questaoId, resposta);
+            setGabaritos(newGabaritos);
+            showNotification('Gabarito salvo com sucesso!', 'success');
+        } catch (error) {
+            showNotification('Erro ao salvar gabarito.', 'error');
+        }
     };
 
 

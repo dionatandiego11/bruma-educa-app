@@ -1,7 +1,6 @@
 // src/App.tsx
 
-import React, { useState, useEffect } from 'react';
-import dbService from './services/dbService';
+import React, { useState } from 'react';
 
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
@@ -9,10 +8,6 @@ import InsertDataPage from './pages/InsertDataPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'insert'>('home');
-
-  useEffect(() => {
-    dbService.initialize();
-  }, []);
 
   const renderPage = () => {
     switch (currentPage) {

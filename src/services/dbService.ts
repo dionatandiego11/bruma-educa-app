@@ -109,7 +109,24 @@ const dbService = {
       .select('professores(*)')
       .eq('turma_id', turmaId)
     if (error) throw error
-    return data.map(r => r.professores)
+    return data.map((r: any) => r.professores)
+  },
+
+  async associateProfessorToTurma(data: { professorId: string; turmaId: string }): Promise<void> {
+    const { error } = await supabase.from('turmas_professores').insert({
+      professor_id: data.professorId,
+      turma_id: data.turmaId,
+    })
+    if (error) throw error
+  },
+
+  async desassociateProfessorFromTurma(data: { professorId: string; turmaId: string }): Promise<void> {
+    const { error } = await supabase
+      .from('turmas_professores')
+      .delete()
+      .eq('professor_id', data.professorId)
+      .eq('turma_id', data.turmaId)
+    if (error) throw error
   },
 
   // ------------------ ALUNOS ------------------
@@ -146,6 +163,15 @@ const dbService = {
       .single()
     if (error) throw error
     return inserted
+  },
+
+  async removeMatricula(data: { alunoId: string; turmaId: string }): Promise<void> {
+    const { error } = await supabase
+      .from('matriculas')
+      .delete()
+      .eq('aluno_id', data.alunoId)
+      .eq('turma_id', data.turmaId)
+    if (error) throw error
   },
 
   // ------------------ PROVÕES ------------------

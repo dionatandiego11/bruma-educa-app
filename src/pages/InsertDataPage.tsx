@@ -15,9 +15,6 @@ interface InsertDataPageProps {
 }
 
 const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
-    // Cole aqui todos os 'useState', 'useEffect', 'useCallback'
-    // e as funções de manipulação de evento (handlers) que estavam no componente InsertDataPage original.
-    // Form states
     const [selectedEscola, setSelectedEscola] = useState('');
     const [selectedSerie, setSelectedSerie] = useState('');
     const [selectedTurma, setSelectedTurma] = useState('');
@@ -40,58 +37,96 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Load initial data
     useEffect(() => {
-        setEscolas(dbService.getEscolas());
+        const fetchEscolas = async () => {
+            try {
+                const data = await dbService.getEscolas();
+                setEscolas(data);
+            } catch (err) {
+                setError('Falha ao buscar escolas.');
+            }
+        };
+        fetchEscolas();
     }, []);
 
-    // Load series when school changes
     useEffect(() => {
-        if (selectedEscola) {
-        setSeries(dbService.getSeriesByEscola(selectedEscola));
-        } else {
-        setSeries([]);
-        }
+        const fetchSeries = async () => {
+            if (selectedEscola) {
+                try {
+                    const data = await dbService.getSeriesByEscola(selectedEscola);
+                    setSeries(data);
+                } catch (err) {
+                    setError('Falha ao buscar séries.');
+                }
+            } else {
+                setSeries([]);
+            }
+        };
+        fetchSeries();
         setSelectedSerie('');
         setSelectedTurma('');
         setSelectedAluno('');
         setSelectedProvao('');
     }, [selectedEscola]);
 
-    // Load turmas when serie changes
     useEffect(() => {
-        if (selectedSerie) {
-        setTurmas(dbService.getTurmasBySerie(selectedSerie));
-        } else {
-        setTurmas([]);
-        }
+        const fetchTurmas = async () => {
+            if (selectedSerie) {
+                try {
+                    const data = await dbService.getTurmasBySerie(selectedSerie);
+                    setTurmas(data);
+                } catch (err) {
+                    setError('Falha ao buscar turmas.');
+                }
+            } else {
+                setTurmas([]);
+            }
+        };
+        fetchTurmas();
         setSelectedTurma('');
         setSelectedAluno('');
         setSelectedProvao('');
     }, [selectedSerie]);
 
-    // Load alunos and provoes when turma changes
     useEffect(() => {
-        if (selectedTurma) {
-        setAlunos(dbService.getAlunosByTurma(selectedTurma));
-        setProvoes(dbService.getProvoesByTurma(selectedTurma));
-        } else {
-        setAlunos([]);
-        setProvoes([]);
-        }
+        const fetchTurmaData = async () => {
+            if (selectedTurma) {
+                try {
+                    const [alunosData, provoesData] = await Promise.all([
+                        dbService.getAlunosByTurma(selectedTurma),
+                        dbService.getProvoesByTurma(selectedTurma)
+                    ]);
+                    setAlunos(alunosData);
+                    setProvoes(provoesData);
+                } catch (err) {
+                    setError('Falha ao buscar dados da turma.');
+                }
+            } else {
+                setAlunos([]);
+                setProvoes([]);
+            }
+        };
+        fetchTurmaData();
         setSelectedAluno('');
         setSelectedProvao('');
     }, [selectedTurma]);
 
-    // Load questoes when provao changes
     useEffect(() => {
-        if (selectedProvao) {
-        setQuestoes(dbService.getQuestoesByProvao(selectedProvao));
-        setRespostas({});
-        } else {
-        setQuestoes([]);
-        setRespostas({});
-        }
+        const fetchQuestoes = async () => {
+            if (selectedProvao) {
+                try {
+                    const data = await dbService.getQuestoesByProvao(selectedProvao);
+                    setQuestoes(data);
+                    setRespostas({});
+                } catch (err) {
+                    setError('Falha ao buscar questões.');
+                }
+            } else {
+                setQuestoes([]);
+                setRespostas({});
+            }
+        };
+        fetchQuestoes();
     }, [selectedProvao]);
 
     // Clear messages after 3 seconds
@@ -151,7 +186,6 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
 
 
   return (
-    // Cole aqui o JSX do componente InsertDataPage original.
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-left mb-8">
