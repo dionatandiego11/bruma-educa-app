@@ -47,7 +47,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     const [professorParaAssociar, setProfessorParaAssociar] = useState('');
 
     // Question form states
-    const [newQuestaoDesc, setNewQuestaoDesc] = useState('');
     const [newQuestaoHab, setNewQuestaoHab] = useState('');
     const [newQuestaoDisciplina, setNewQuestaoDisciplina] = useState<Disciplina>('Português');
     const [gabaritos, setGabaritos] = useState<Map<string, Alternativa>>(new Map());
@@ -320,15 +319,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
     const handleAddQuestao = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (newQuestaoDesc.trim() && newQuestaoHab.trim() && selectedProvao) {
+        if (newQuestaoHab.trim() && selectedProvao) {
             try {
                 await dbService.addQuestao({
                     provaoId: selectedProvao,
                     disciplina: newQuestaoDisciplina,
-                    descricao: newQuestaoDesc.trim(),
                     habilidade_codigo: newQuestaoHab.trim(),
                 });
-                setNewQuestaoDesc('');
                 setNewQuestaoHab('');
                 setQuestoes(await dbService.getQuestoesByProvao(selectedProvao));
                 showNotification('Questão adicionada com sucesso!');
@@ -659,13 +656,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                         onChange={e => setNewQuestaoHab(e.target.value)}
                                         placeholder="Código da habilidade (ex: EF15LP03)"
                                     />
-                                    <textarea
-                                        value={newQuestaoDesc}
-                                        onChange={e => setNewQuestaoDesc(e.target.value)}
-                                        placeholder="Descrição da questão..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={3}
-                                    />
                                     <Select
                                         value={newQuestaoDisciplina}
                                         onChange={e => setNewQuestaoDisciplina(e.target.value as Disciplina)}
@@ -685,10 +675,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     {/* Lado direito - Questão e Gabarito */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-semibold">QuestÃµes e Gabarito</h3>
+                            <h3 className="text-lg font-semibold">Questões e Gabarito</h3>
                             {questoes.length > 0 && (
                                 <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                    {questoes.length} questÃµes
+                                    {questoes.length} questões
                                 </span>
                             )}
                         </div>
@@ -706,7 +696,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                                         {q.disciplina}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm font-medium text-gray-800 mb-1">{q.descricao}</p>
                                                 <p className="text-xs text-gray-600">Habilidade: {q.habilidade_codigo}</p>
                                             </div>
                                         </div>

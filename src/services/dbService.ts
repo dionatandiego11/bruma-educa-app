@@ -357,7 +357,6 @@ class DatabaseService {
   async addQuestao(dto: { 
     provaoId: string; 
     disciplina: Disciplina; 
-    descricao: string; 
     habilidade_codigo: string 
   }): Promise<Questao> {
     const { data, error } = await supabase
@@ -365,7 +364,6 @@ class DatabaseService {
       .insert({
         provao_id: dto.provaoId,
         disciplina: dto.disciplina,
-        descricao: dto.descricao,
         habilidade_codigo: dto.habilidade_codigo
       })
       .select()
