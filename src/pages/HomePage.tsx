@@ -30,7 +30,7 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 Gerencie escolas, séries, turmas, professores, alunos e crie provões com questões.
               </p>
               <Button onClick={() => onNavigate('admin')} className="w-full">
-                Acessar Administração
+                Acessar Painel
               </Button>
             </div>
           </Card>
