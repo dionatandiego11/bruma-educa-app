@@ -253,11 +253,11 @@ const dbService = {
   async addScore(data: { alunoId: string; questaoId: string; resposta: Alternativa }): Promise<Score> {
     const { data: inserted, error } = await supabase
       .from('scores')
-      .insert({
+      .upsert({
         aluno_id: data.alunoId,
         questao_id: data.questaoId,
         resposta: data.resposta,
-      })
+      }, { onConflict: 'aluno_id,questao_id' })
       .select()
       .single()
     if (error) throw error
