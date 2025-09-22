@@ -116,9 +116,29 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
             if (selectedProvao) {
                 try {
                     const data = await dbService.getQuestoesByProvao(selectedProvao);
+                    console.log('Questões carregadas:', data); // Para debug
                     setQuestoes(data);
-                    setRespostas({});
+                    
+                    // Carregar respostas existentes do aluno se já houver um aluno selecionado
+                    if (selectedAluno && data.length > 0) {
+                        const respostasExistentes: { [key: string]: Alternativa | null } = {};
+                        for (const questao of data) {
+                            try {
+                                const score = await dbService.getScoreByAlunoQuestao(selectedAluno, questao.id);
+                                if (score) {
+                                    respostasExistentes[questao.id] = score.resposta;
+                                }
+                            } catch {
+                                // Ignora se não encontrar resposta existente
+                                respostasExistentes[questao.id] = null;
+                            }
+                        }
+                        setRespostas(respostasExistentes);
+                    } else {
+                        setRespostas({});
+                    }
                 } catch (err) {
+                    console.error('Erro ao carregar questões:', err);
                     setError('Falha ao buscar questões.');
                 }
             } else {
@@ -127,7 +147,7 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
             }
         };
         fetchQuestoes();
-    }, [selectedProvao]);
+    }, [selectedProvao, selectedAluno]);
 
     // Clear messages after 3 seconds
     useEffect(() => {
@@ -140,46 +160,31 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
         }
     }, [success, error]);
 
-    const handleRespostaChange = useCallback((questaoId: string, valor: Alternativa) => {
-        setRespostas((prev) => ({ ...prev, [questaoId]: valor }));
-    }, []);
+    const handleRespostaChange = useCallback(async (questaoId: string, valor: Alternativa) => {
+        if (!selectedAluno) {
+            setError('Selecione um aluno antes de responder as questões.');
+            return;
+        }
+
+        try {
+            await dbService.addScore({
+                alunoId: selectedAluno,
+                questaoId: questaoId,
+                resposta: valor
+            });
+
+            setRespostas((prev) => ({ ...prev, [questaoId]: valor }));
+            setSuccess('Resposta salva com sucesso!');
+        } catch (err) {
+            setError('Erro ao salvar resposta.');
+            console.error(err);
+        }
+    }, [selectedAluno]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
-
-        if (!selectedEscola || !selectedSerie || !selectedTurma || !selectedAluno || !selectedProvao) {
-        setError('Todos os campos de identificação devem ser preenchidos.');
-        return;
-        }
-
-        const respostasMarcadas = Object.values(respostas).filter(r => r !== null);
-        if (questoes.length > 0 && respostasMarcadas.length !== questoes.length) {
-        setError('Todas as questões devem ter uma alternativa selecionada.');
-        return;
-        }
-
-        setIsLoading(true);
-        try {
-        const dadosParaSalvar = questoes.map((questao) => ({
-            alunoId: selectedAluno,
-            questaoId: questao.id,
-            resposta: respostas[questao.id] as Alternativa,
-        }));
-
-        await Promise.all(dadosParaSalvar.map(dado => dbService.addScore(dado)));
-
-        setSuccess('Respostas inseridas com sucesso!');
-        setSelectedAluno('');
-        setRespostas({});
-
-        } catch (err) {
-        setError('Ocorreu um erro ao salvar os dados.');
-        console.error(err);
-        } finally {
-        setIsLoading(false);
-        }
+        setSuccess('Todas as respostas foram salvas individualmente.');
     };
 
     const alternativas: Alternativa[] = ['A', 'B', 'C', 'D'];
@@ -265,7 +270,6 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
                           Questão {index + 1} - {q.habilidade_codigo}
                         </span>
                         <div className="text-xs text-gray-600">{q.disciplina}</div>
-                        <div className="text-sm text-gray-700 mt-1">{q.descricao}</div>
                       </div>
                       <div className="flex items-center space-x-2">
                         {alternativas.map(alt => (
@@ -292,8 +296,12 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
             <div className="text-center pt-4">
               {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
               {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Salvando...' : 'Salvar Dados'}
+              <div className="text-sm text-gray-600">
+                <p>As respostas são salvas automaticamente quando você clica nas alternativas.</p>
+                <p>Não é necessário clicar em "Salvar Dados" - use apenas para confirmação.</p>
+              </div>
+              <Button type="submit" className="mt-4">
+                Confirmar Finalização
               </Button>
             </div>
           </form>
