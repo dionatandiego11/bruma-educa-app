@@ -1,5 +1,4 @@
-// src/types/index.ts
-// Tipos e interfaces corrigidas para corresponder ao banco de dados
+// src/types/index.ts - Corrigido para compatibilidade
 
 export type Disciplina = 'Português' | 'Matemática';
 export type Alternativa = 'A' | 'B' | 'C' | 'D';
@@ -14,18 +13,19 @@ interface BaseEntity {
 // Entidades principais
 export interface Escola extends BaseEntity {
   nome: string;
+  codigo_id: string;
 }
 
 export interface Serie extends BaseEntity {
   nome: string;
   escola_id: string;
-  escola?: Escola; // Para quando incluir relação
+  escola: Escola; // Para quando incluir relação
 }
 
 export interface Turma extends BaseEntity {
   nome: string;
   serie_id: string;
-  serie?: Serie; // Para quando incluir relação
+  serie: Serie; // Para quando incluir relação
 }
 
 export interface Professor extends BaseEntity {
@@ -40,16 +40,15 @@ export interface Aluno extends BaseEntity {
 export interface Provao extends BaseEntity {
   nome: string;
   turma_id: string;
-  data?: string;
-  turma?: Turma; // Para quando incluir relação
+  professor_id: string;
+  turma: Turma; 
 }
 
 export interface Questao extends BaseEntity {
   provao_id: string;
   disciplina: Disciplina;
-  descricao: string;
   habilidade_codigo: string;
-  provao?: Provao; // Para quando incluir relação
+  provao: Provao; // Para quando incluir relação
 }
 
 // Tabelas de relacionamento
@@ -62,13 +61,13 @@ export interface Gabarito extends BaseEntity {
 export interface Matricula extends BaseEntity {
   aluno_id: string;
   turma_id: string;
+  ativo?: boolean;
   aluno?: Aluno; // Para quando incluir relação
   turma?: Turma; // Para quando incluir relação
 }
 
 export interface TurmaProfessor extends BaseEntity {
   turma_id: string;
-  professor_id: string;
   turma?: Turma; // Para quando incluir relação
   professor?: Professor; // Para quando incluir relação
 }
@@ -76,24 +75,25 @@ export interface TurmaProfessor extends BaseEntity {
 export interface Score extends BaseEntity {
   aluno_id: string;
   questao_id: string;
-  resposta: Alternativa;
+  resposta: Alternativa;=
   aluno?: Aluno; // Para quando incluir relação
   questao?: Questao; // Para quando incluir relação
 }
 
-// Tipos para formulários e DTOs
+// Tipos para formulários e DTOs - Corrigidos para compatibilidade
 export interface CreateEscolaDTO {
   nome: string;
 }
 
 export interface CreateSerieDTO {
   nome: string;
-  escola_id: string;
+  escolaId: string; // Corrigido para match com AdminPage
 }
 
 export interface CreateTurmaDTO {
   nome: string;
-  serie_id: string;
+  serieId: string; // Corrigido para match com AdminPage
+  professorIds?: string[]; 
 }
 
 export interface CreateProfessorDTO {
@@ -107,31 +107,34 @@ export interface CreateAlunoDTO {
 
 export interface CreateProvaoDTO {
   nome: string;
-  turma_id: string;
-  data?: string;
+  turmaId: string; // Corrigido para match com AdminPage
 }
 
 export interface CreateQuestaoDTO {
-  provao_id: string;
+  provaoId: string; // Corrigido para match com AdminPage
   disciplina: Disciplina;
   descricao: string;
   habilidade_codigo: string;
+  ordem?: string;
 }
 
 export interface CreateGabaritoDTO {
-  questao_id: string;
-  resposta_correta: Alternativa;
+  questaoId: string; // Corrigido para match com AdminPage
+  respostaCorreta: Alternativa; // Corrigido para match com AdminPage
 }
 
 export interface CreateMatriculaDTO {
-  aluno_id: string;
-  turma_id: string;
+  alunoId: string; // Corrigido para match com AdminPage
+  turmaId: string; // Corrigido para match com AdminPage
+  data_matricula?: string;
+  ativo?: boolean;
 }
 
 export interface CreateScoreDTO {
-  aluno_id: string;
-  questao_id: string;
+  alunoId: string; // Corrigido para match com InsertDataPage
+  questaoId: string; // Corrigido para match com InsertDataPage
   resposta: Alternativa;
+  date?: string;
 }
 
 // Tipos para respostas com relacionamentos
@@ -146,7 +149,7 @@ export interface ProvaoComQuestoes extends Provao {
   questoes: Array<Questao & { gabarito?: Gabarito }>;
 }
 
-// Tipos para estatísticas e relatórios
+// Tipos para estatísticas e relatórios - Corrigidos
 export interface EstatisticasAluno {
   aluno: Aluno;
   total_questoes: number;
@@ -160,10 +163,11 @@ export interface EstatisticasAluno {
   }[];
 }
 
+// Corrigido para match com dbService
 export interface EstatisticasTurma {
   turma: Turma;
   total_alunos: number;
-  media_geral: number;
+  media_geral: number; 
   por_provao: {
     provao: Provao;
     media: number;

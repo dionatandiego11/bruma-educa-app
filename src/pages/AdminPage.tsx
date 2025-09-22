@@ -81,7 +81,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 try {
                     setSeriesOfSelectedEscola(await dbService.getSeriesByEscola(selectedEscola));
                 } catch (error) {
-                    showNotification('Erro ao carregar séries.', 'error');
+                    showNotification('Erro ao carregar Séries.', 'error');
                 }
             } else {
                 setSeriesOfSelectedEscola([]);
@@ -173,21 +173,22 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         e.preventDefault();
         if (newEscola.trim()) {
             try {
-                await dbService.addEscola({ nome: newEscola.trim() });
+                await dbService.createEscola({ nome: newEscola.trim() });
                 setNewEscola('');
                 setEscolas(await dbService.getEscolas());
                 showNotification('Escola adicionada com sucesso!');
-            } catch (error) {
-                showNotification('Erro ao adicionar escola.', 'error');
+            } catch (err: any) {
+                console.error('Erro detalhado ao criar escola:', err);
+                showNotification(err.message || 'Erro ao adicionar escola.', 'error');
             }
-        }
+        }    
     };
 
     const handleAddSerie = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newSerie.trim() && selectedEscola) {
             try {
-                await dbService.addSerie({ nome: newSerie.trim(), escolaId: selectedEscola });
+                await dbService.createSerie({ nome: newSerie.trim(), escolaId: selectedEscola });
                 setNewSerie('');
                 setSeriesOfSelectedEscola(await dbService.getSeriesByEscola(selectedEscola));
                 showNotification('Série adicionada com sucesso!');
@@ -500,7 +501,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         <Input
                             value={newAlunoMatricula}
                             onChange={(e) => setNewAlunoMatricula(e.target.value)}
-                            placeholder="Matrícula do aluno"
+                            placeholder="Matrí­cula do aluno"
                         />
                         <Button type="submit" className="w-full">
                             <Plus size={16} className="mr-2" />
@@ -607,7 +608,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             </div>
         </div>
 
-        {/* Seção do Provão */}
+        {/* Sessão do Provão */}
         <Card>
             <div className="flex items-center justify-center gap-3 mb-6">
                 <FileText className="text-orange-600" size={32} />
@@ -681,13 +682,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         )}
                     </div>
 
-                    {/* Lado direito - Questões e Gabarito */}
+                    {/* Lado direito - Questão e Gabarito */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-semibold">Questões e Gabarito</h3>
+                            <h3 className="text-lg font-semibold">QuestÃµes e Gabarito</h3>
                             {questoes.length > 0 && (
                                 <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                    {questoes.length} questões
+                                    {questoes.length} questÃµes
                                 </span>
                             )}
                         </div>
@@ -731,7 +732,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                 <div className="text-center py-8">
                                     <FileText size={48} className="mx-auto text-gray-400 mb-3" />
                                     <p className="text-gray-500">Nenhuma questão adicionada ainda.</p>
-                                    <p className="text-sm text-gray-400">Selecione um provão e adicione questões.</p>
+                                    <p className="text-sm text-gray-400">Selecione um provão e adicione questão.</p>
                                 </div>
                             )}
                         </div>
