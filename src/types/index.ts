@@ -40,8 +40,9 @@ export interface Aluno extends BaseEntity {
 export interface Provao extends BaseEntity {
   nome: string;
   turma_id: string;
-  professor_id: string;
-  turma: Turma; 
+  data?: string;
+  descricao?: string;
+  turma?: Turma; 
 }
 
 export interface Questao extends BaseEntity {
@@ -75,7 +76,7 @@ export interface TurmaProfessor extends BaseEntity {
 export interface Score extends BaseEntity {
   aluno_id: string;
   questao_id: string;
-  resposta: Alternativa;=
+  resposta: Alternativa;
   aluno?: Aluno; // Para quando incluir relação
   questao?: Questao; // Para quando incluir relação
 }

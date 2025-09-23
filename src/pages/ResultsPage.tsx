@@ -1,11 +1,10 @@
 // src/pages/ResultsPage.tsx
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BarChart3, Users, Trophy, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, Trophy, FileText} from 'lucide-react';
 import dbService from '../services/dbService';
 import type { Escola, Serie, Turma, Aluno, Provao, Questao, Alternativa } from '../types';
 import Card from '../components/Card';
-import Button from '../components/Button';
 import Select from '../components/Select';
 
 interface ResultsPageProps {
@@ -42,27 +41,52 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
   // UI states
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Progress states
+  const [loadingProgress, setLoadingProgress] = useState({ step: '', progress: 0 });
 
-  // Load escolas
+  // Cache para dados estáticos
+  const [cache, setCache] = useState<{
+    escolas?: Escola[];
+    series?: { [escolaId: string]: Serie[] };
+    turmas?: { [serieId: string]: Turma[] };
+  }>({});
+
+  // Load escolas com cache
   useEffect(() => {
     const fetchEscolas = async () => {
+      if (cache.escolas) {
+        setEscolas(cache.escolas);
+        return;
+      }
+      
       try {
         const data = await dbService.getEscolas();
         setEscolas(data);
+        setCache(prev => ({ ...prev, escolas: data }));
       } catch (err) {
         setError('Falha ao buscar escolas.');
       }
     };
     fetchEscolas();
-  }, []);
+  }, [cache.escolas]);
 
   // Load series when escola changes
   useEffect(() => {
     const fetchSeries = async () => {
       if (selectedEscola) {
+        if (cache.series?.[selectedEscola]) {
+          setSeries(cache.series[selectedEscola]);
+          return;
+        }
+        
         try {
           const data = await dbService.getSeriesByEscola(selectedEscola);
           setSeries(data);
+          setCache(prev => ({ 
+            ...prev, 
+            series: { ...prev.series, [selectedEscola]: data } 
+          }));
         } catch (err) {
           setError('Falha ao buscar séries.');
         }
@@ -74,15 +98,24 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
     setSelectedSerie('');
     setSelectedTurma('');
     setSelectedProvao('');
-  }, [selectedEscola]);
+  }, [selectedEscola, cache.series]);
 
   // Load turmas when serie changes
   useEffect(() => {
     const fetchTurmas = async () => {
       if (selectedSerie) {
+        if (cache.turmas?.[selectedSerie]) {
+          setTurmas(cache.turmas[selectedSerie]);
+          return;
+        }
+        
         try {
           const data = await dbService.getTurmasBySerie(selectedSerie);
           setTurmas(data);
+          setCache(prev => ({ 
+            ...prev, 
+            turmas: { ...prev.turmas, [selectedSerie]: data } 
+          }));
         } catch (err) {
           setError('Falha ao buscar turmas.');
         }
@@ -93,7 +126,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
     fetchTurmas();
     setSelectedTurma('');
     setSelectedProvao('');
-  }, [selectedSerie]);
+  }, [selectedSerie, cache.turmas]);
 
   // Load provoes when turma changes
   useEffect(() => {
@@ -113,7 +146,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
     setSelectedProvao('');
   }, [selectedTurma]);
 
-  // Load and calculate results when provao changes
+  // Load and calculate results when provao changes (OTIMIZADO)
   useEffect(() => {
     const calculateResults = async () => {
       if (selectedProvao && selectedTurma) {
@@ -121,65 +154,74 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
         setError('');
         
         try {
-          // Buscar dados necessários
-          const [alunos, questoes] = await Promise.all([
-            dbService.getAlunosByTurma(selectedTurma),
-            dbService.getQuestoesByProvao(selectedProvao)
-          ]);
+          console.time('CalculoResultadosCompleto');
 
+          // PROGRESSO: Carregando alunos
+          setLoadingProgress({ step: 'Carregando alunos...', progress: 20 });
+          const alunos = await dbService.getAlunosByTurma(selectedTurma);
+
+          // PROGRESSO: Carregando questões
+          setLoadingProgress({ step: 'Carregando questões...', progress: 40 });
+          const questoes = await dbService.getQuestoesByProvao(selectedProvao);
+
+          // PROGRESSO: Carregando respostas
+          setLoadingProgress({ step: 'Carregando respostas...', progress: 60 });
+          const scores = await dbService.getScoresByTurmaAndProvao(selectedTurma, selectedProvao);
+
+          // PROGRESSO: Carregando gabaritos
+          setLoadingProgress({ step: 'Carregando gabaritos...', progress: 80 });
+          const gabaritos = await dbService.getGabaritosByProvao(selectedProvao);
+
+          console.log('📊 Dados carregados em lote:', {
+            alunos: alunos.length,
+            questões: questoes.length,
+            scores: scores.length,
+            gabaritos: gabaritos.size
+          });
+
+          // Validações
           if (questoes.length === 0) {
             setError('Este provão não possui questões cadastradas.');
             setResultados([]);
-            setIsLoading(false);
             return;
           }
 
-          // Buscar gabaritos para todas as questões
-          const gabaritos = new Map<string, Alternativa>();
-          for (const questao of questoes) {
-            try {
-              const gabarito = await dbService.getGabaritoByQuestao(questao.id);
-              if (gabarito) {
-                gabaritos.set(questao.id, gabarito.resposta_correta);
-              }
-            } catch (err) {
-              console.error(`Erro ao buscar gabarito para questão ${questao.id}:`, err);
-            }
+          if (gabaritos.size === 0) {
+            setError('Este provão não possui gabaritos definidos.');
+            setResultados([]);
+            return;
           }
 
-          // Calcular resultados para cada aluno
-          const resultadosCalculados: AlunoResult[] = [];
+          // PROGRESSO: Processando dados
+          setLoadingProgress({ step: 'Processando resultados...', progress: 90 });
+
+          // PROCESSAMENTO NO CLIENTE (rápido)
           
-          for (const aluno of alunos) {
+          // 1. Organiza scores por aluno para acesso O(1)
+          const scoresPorAluno = new Map<string, Map<string, Alternativa>>();
+          
+          scores.forEach((score: any) => {
+            if (!scoresPorAluno.has(score.aluno_id)) {
+              scoresPorAluno.set(score.aluno_id, new Map());
+            }
+            scoresPorAluno.get(score.aluno_id)!.set(score.questao_id, score.resposta);
+          });
+
+          // 2. Calcula resultados para cada aluno
+          const resultadosCalculados: AlunoResult[] = alunos.map(aluno => {
+            const scoresAluno = scoresPorAluno.get(aluno.id) || new Map();
             let acertos = 0;
-            let erros = 0;
             const detalhes: AlunoResult['detalhes'] = [];
 
-            for (const questao of questoes) {
+            questoes.forEach(questao => {
               const gabarito = gabaritos.get(questao.id);
-              
-              if (!gabarito) {
-                // Se não há gabarito, pula esta questão
-                continue;
-              }
+              if (!gabarito) return; // Pula questões sem gabarito
 
-              let respostaAluno: Alternativa | null = null;
-              
-              try {
-                const score = await dbService.getScoreByAlunoQuestao(aluno.id, questao.id);
-                respostaAluno = score ? score.resposta : null;
-              } catch (err) {
-                // Aluno não respondeu esta questão
-                respostaAluno = null;
-              }
-
+              const respostaAluno = scoresAluno.get(questao.id) || null;
               const acertou = respostaAluno === gabarito;
-              if (respostaAluno !== null) {
-                if (acertou) {
-                  acertos++;
-                } else {
-                  erros++;
-                }
+
+              if (respostaAluno !== null && acertou) {
+                acertos++;
               }
 
               detalhes.push({
@@ -188,37 +230,50 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
                 gabarito,
                 acertou
               });
-            }
+            });
 
-            const totalQuestoes = questoes.filter(q => gabaritos.has(q.id)).length;
-            const percentual = totalQuestoes > 0 ? (acertos / totalQuestoes) * 100 : 0;
+            const totalQuestoesComGabarito = detalhes.length;
+            const percentual = totalQuestoesComGabarito > 0 ? (acertos / totalQuestoesComGabarito) * 100 : 0;
 
-            resultadosCalculados.push({
+            return {
               aluno,
-              totalQuestoes,
+              totalQuestoes: totalQuestoesComGabarito,
               acertos,
-              erros,
+              erros: totalQuestoesComGabarito - acertos,
               percentual,
               detalhes
-            });
-          }
+            };
+          });
 
-          // Ordenar por percentual (maior para menor)
+          // 3. Ordena por percentual (maior primeiro)
           resultadosCalculados.sort((a, b) => b.percentual - a.percentual);
           setResultados(resultadosCalculados);
 
+          // PROGRESSO: Finalizado
+          setLoadingProgress({ step: 'Finalizado!', progress: 100 });
+
+          console.timeEnd('CalculoResultadosCompleto');
+          console.log(`✅ Resultados calculados para ${resultadosCalculados.length} alunos`);
+          
         } catch (err) {
-          console.error('Erro ao calcular resultados:', err);
-          setError('Erro ao calcular resultados.');
+          console.error('❌ Erro ao calcular resultados:', err);
+          setError('Erro ao calcular resultados: ' + (err as Error).message);
+          setLoadingProgress({ step: 'Erro ao carregar', progress: 0 });
         } finally {
           setIsLoading(false);
+          // Reseta progresso após 1 segundo (para mostrar "Finalizado!")
+          setTimeout(() => {
+            setLoadingProgress({ step: '', progress: 0 });
+          }, 1000);
         }
       } else {
         setResultados([]);
       }
     };
 
-    calculateResults();
+    // Debounce para evitar chamadas muito rápidas
+    const timeoutId = setTimeout(calculateResults, 300);
+    return () => clearTimeout(timeoutId);
   }, [selectedProvao, selectedTurma]);
 
   // Clear error after 5 seconds
@@ -245,6 +300,28 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
+        
+        {/* Indicador de Progresso */}
+        {isLoading && (
+          <div className="fixed top-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <div>
+                <div className="text-sm font-medium">{loadingProgress.step}</div>
+                <div className="w-32 bg-blue-200 rounded-full h-2 mt-1">
+                  <div 
+                    className="bg-white h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${loadingProgress.progress}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-blue-200 mt-1">
+                  {loadingProgress.progress}% completo
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <button 
             onClick={() => onNavigate('home')} 
@@ -315,7 +392,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
           </div>
         </Card>
 
-        {isLoading && (
+        {isLoading && !loadingProgress.step.includes('Finalizado') && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <p className="mt-2 text-gray-600">Calculando resultados...</p>
@@ -427,7 +504,9 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ onNavigate }) => {
             <div className="text-center py-8">
               <Users size={48} className="mx-auto text-gray-400 mb-3" />
               <p className="text-gray-500">Nenhum resultado encontrado para este provão.</p>
-              <p className="text-sm text-gray-400">Verifique se há alunos que responderam as questões.</p>
+              <p className="text-sm text-gray-400">
+                Verifique se há alunos matriculados e questões com gabaritos definidos.
+              </p>
             </div>
           </Card>
         )}
