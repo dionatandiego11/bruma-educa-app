@@ -91,20 +91,6 @@ O build estará em `dist/`. Hospede em Vercel, Netlify ou similar.
 - Crie um provão global > Atribua à turma > Adicione questões e gabaritos.
 - Insira respostas > Analise resultados.
 
-## 📸 Screenshots
-
-- **Home Page**:
-  ![Home](screenshots/home.png) *(Adicione imagens reais ao repo)*
-
-- **Admin Page**:
-  ![Admin](screenshots/admin.png)
-
-- **Inserir Dados**:
-  ![Insert](screenshots/insert.png)
-
-- **Resultados**:
-  ![Results](screenshots/results.png)
-
 ## 🤝 Contribuições
 
 Contribuições são bem-vindas! Siga estes passos:
