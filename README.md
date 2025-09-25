@@ -9,7 +9,7 @@ Bem-vindo ao **Sistema Educacional Brumadinho**, uma aplicação web full-stack 
 
 ## 📖 Descrição
 
-Este sistema é uma solução completa para administração escolar, inspirada nas necessidades de escolas municipais como as de Brumadinho (MG). Ele suporta:
+Este sistema é uma solução para gestão de provas escolar, inspirada nas necessidades de escolas municipais de Brumadinho (MG). Ele suporta:
 
 - **Gestão de Entidades**: Escolas, séries, turmas, professores e alunos.
 - **Criação de Avaliações**: Provões com questões por disciplina (Português e Matemática), incluindo gabaritos e edição/exclusão.
