@@ -355,11 +355,11 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const handleAddProvao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProvaoName.trim()) {
-      showNotification('Por favor, insira um nome para a prova.', 'error');
+      showNotification('Por favor, insira um nome para o provão.', 'error');
       return;
     }
     if (!selectedTurma) {
-      showNotification('Selecione uma turma para a prova.', 'error');
+      showNotification('Selecione uma turma para o provão.', 'error');
       return;
     }
 
@@ -371,9 +371,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
       setNewProvaoName('');
       setProvoes(await dbService.getProvoesByTurma(selectedTurma));
-      showNotification('Prova criado com sucesso!');
+      showNotification('Provão criado com sucesso!');
     } catch (error) {
-      showNotification('Erro ao criar prova.', 'error');
+      showNotification('Erro ao criar provão.', 'error');
     }
   };
 
@@ -449,7 +449,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </div>
               Painel Administrativo
             </h1>
-            <p className="text-gray-600 mt-2">Gerencie escolas, professores, alunos e provas</p>
+            <p className="text-gray-600 mt-2">Gerencie escolas, professores, alunos e provões</p>
           </div>
           
           <div className="w-32"></div>
@@ -822,14 +822,14 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Sessão do Prova */}
+        {/* Sessão do Provão */}
         <Card className="border-0 shadow-2xl bg-gradient-to-r from-orange-50 to-red-50">
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 rounded-2xl">
               <FileText className="text-white" size={32} />
             </div>
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-800">Gerenciar Provas</h2>
+              <h2 className="text-3xl font-bold text-gray-800">Gerenciar Provão</h2>
               <p className="text-gray-600 mt-1">Crie e gerencie avaliações para suas turmas</p>
             </div>
           </div>
@@ -844,19 +844,19 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Lado esquerdo - Criação e seleção */}
               <div className="space-y-6">
-                {/* Criar Novo Prova */}
+                {/* Criar Novo Provão */}
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <div className="bg-green-100 p-1 rounded-lg">
                       <Plus size={16} className="text-green-600" />
                     </div>
-                    Criar Nova Prova
+                    Criar Novo Provão
                   </h3>
                   <form onSubmit={handleAddProvao} className="space-y-4">
                     <Input
                       value={newProvaoName}
                       onChange={e => setNewProvaoName(e.target.value)}
-                      placeholder="Nome da nova prova"
+                      placeholder="Nome do novo provão"
                       className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl"
                     />
                     <Button 
@@ -865,27 +865,27 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl py-3 font-medium"
                     >
                       <Plus size={16} className="mr-2" />
-                      Criar Prova
+                      Criar Provão
                     </Button>
                   </form>
                 </div>
 
                 <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
 
-                {/* Selecionar Prova */}
+                {/* Selecionar Provão */}
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <div className="bg-blue-100 p-1 rounded-lg">
                       <FileText size={16} className="text-blue-600" />
                     </div>
-                    Editar Prova Existente
+                    Editar Provão Existente
                   </h3>
                   <Select
                     value={selectedProvao}
                     onChange={e => setSelectedProvao(e.target.value)}
                     className="w-full border-2 border-gray-200 focus:border-blue-500 rounded-xl"
                   >
-                    <option value="">Selecione uma prova para editar</option>
+                    <option value="">Selecione um provão para editar</option>
                     {provoes.map(p => (
                       <option key={p.id} value={p.id}>{p.nome}</option>
                     ))}
@@ -978,7 +978,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                               className={`flex items-center justify-center gap-1 rounded-xl transition-all duration-200 ${
                                 gabaritos.get(q.id) === alt 
                                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105' 
-                                  : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                               }`}
                             >
                               <span className="font-bold">{alt}</span>
@@ -994,7 +994,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     <div className="text-center py-12">
                       <FileText size={48} className="mx-auto text-gray-400 mb-4" />
                       <p className="text-gray-500 text-lg mb-1">Nenhuma questão adicionada ainda</p>
-                      <p className="text-sm text-gray-400">Selecione uma prova e adicione questões.</p>
+                      <p className="text-sm text-gray-400">Selecione um provão e adicione questões.</p>
                     </div>
                   )}
                 </div>
