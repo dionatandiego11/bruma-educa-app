@@ -1,4 +1,4 @@
-// src/types/index.ts - Corrigido para compatibilidade
+// src/types/index.ts 
 
 export type Disciplina = 'Português' | 'Matemática';
 export type Alternativa = 'A' | 'B' | 'C' | 'D';
@@ -13,8 +13,10 @@ interface BaseEntity {
 // Entidades principais
 export interface Escola extends BaseEntity {
   nome: string;
-  codigo_id: string;
+  codigo_inep: string;
+  localizacao: "Urbano" | "Rural";
 }
+
 
 export interface Serie extends BaseEntity {
   nome: string;
@@ -84,7 +86,10 @@ export interface Score extends BaseEntity {
 // Tipos para formulários e DTOs - Corrigidos para compatibilidade
 export interface CreateEscolaDTO {
   nome: string;
+  codigo_inep: string;
+  localizacao: "Urbano" | "Rural";
 }
+
 
 export interface CreateSerieDTO {
   nome: string;
