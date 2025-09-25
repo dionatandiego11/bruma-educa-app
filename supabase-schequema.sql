@@ -50,13 +50,11 @@ CREATE TABLE public.professores (
 CREATE TABLE public.provoes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   nome character varying NOT NULL,
-  turma_id uuid NOT NULL,
   data date DEFAULT CURRENT_DATE,
   descricao text,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT provoes_pkey PRIMARY KEY (id),
-  CONSTRAINT provoes_turma_id_fkey FOREIGN KEY (turma_id) REFERENCES public.turmas(id)
+  CONSTRAINT provoes_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.questoes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -107,4 +105,13 @@ CREATE TABLE public.turmas_professores (
   CONSTRAINT turmas_professores_pkey PRIMARY KEY (id),
   CONSTRAINT turmas_professores_turma_id_fkey FOREIGN KEY (turma_id) REFERENCES public.turmas(id),
   CONSTRAINT turmas_professores_professor_id_fkey FOREIGN KEY (professor_id) REFERENCES public.professores(id)
+);
+CREATE TABLE public.provoes_turmas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provao_id uuid NOT NULL,
+  turma_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT provoes_turmas_pkey PRIMARY KEY (id),
+  CONSTRAINT provoes_turmas_provao_id_fkey FOREIGN KEY (provao_id) REFERENCES public.provoes(id),
+  CONSTRAINT provoes_turmas_turma_id_fkey FOREIGN KEY (turma_id) REFERENCES public.turmas(id)
 );

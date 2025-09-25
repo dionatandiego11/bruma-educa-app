@@ -251,28 +251,29 @@ class DatabaseService {
     return data
   }
 
-  async addMatricula(dto: { alunoId: string; turmaId: string }): Promise<Matricula> {
+  async addMatricula(dto: { alunoIds: string[]; turmaId: string }): Promise<Matricula[]> {
+    const matriculasToInsert = dto.alunoIds.map(alunoId => ({
+      aluno_id: alunoId,
+      turma_id: dto.turmaId,
+    }));
+
     const { data, error } = await supabase
       .from('matriculas')
-      .insert({
-        aluno_id: dto.alunoId,
-        turma_id: dto.turmaId
-      })
-      .select()
-      .single()
-    
+      .insert(matriculasToInsert)
+      .select();
+
     if (error) {
       if (error.code === '23505') {
-        throw new Error('Este aluno já está matriculado nesta turma')
+        throw new Error('Um ou mais alunos já estão matriculados nesta turma.');
       }
       if (error.code === '23503') {
-        throw new Error('Aluno ou turma não encontrados')
+        throw new Error('Turma ou um dos alunos não foram encontrados.');
       }
-      console.error('Erro ao matricular aluno:', error)
-      throw new Error(`Falha ao matricular aluno: ${error.message}`)
+      console.error('Erro ao matricular alunos:', error);
+      throw new Error(`Falha ao matricular alunos: ${error.message}`);
     }
-    
-    return data
+
+    return data || [];
   }
 
   async removeMatricula(dto: { alunoId: string; turmaId: string }): Promise<void> {
@@ -291,38 +292,69 @@ class DatabaseService {
   // ------------------ PROVÕES ------------------
   async getProvoesByTurma(turmaId: string): Promise<Provao[]> {
     const { data, error } = await supabase
-      .from('provoes')
-      .select('*')
+      .from('provoes_turmas')
+      .select('provao:provoes(*)')
       .eq('turma_id', turmaId)
-      .order('created_at', { ascending: false })
-    
+      .order('created_at', { foreignTable: 'provoes', ascending: false });
+
     if (error) {
-      console.error('Erro ao buscar provões:', error)
-      throw new Error(`Falha ao buscar provões: ${error.message}`)
+      console.error('Erro ao buscar provões da turma:', error);
+      throw new Error(`Falha ao buscar provões da turma: ${error.message}`);
     }
-    
-    return data || []
+
+    // A estrutura do retorno é { provao: Provao }[]
+    return data?.map((item: any) => item.provao).filter(Boolean) || [];
   }
 
-  async addProvao(dto: { nome: string; turmaId: string }): Promise<Provao> {
+  async addProvao(dto: { nome: string; descricao?: string }): Promise<Provao> {
     const { data, error } = await supabase
       .from('provoes')
       .insert({
         nome: dto.nome,
-        turma_id: dto.turmaId
+        descricao: dto.descricao,
       })
       .select()
       .single()
-    
+
     if (error) {
-      if (error.code === '23503') {
-        throw new Error('Turma não encontrada')
-      }
       console.error('Erro ao criar provão:', error)
       throw new Error(`Falha ao criar provão: ${error.message}`)
     }
-    
+
     return data
+  }
+
+  async getAllProvoes(): Promise<Provao[]> {
+    const { data, error } = await supabase
+      .from('provoes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar todos os provões:', error);
+      throw new Error(`Falha ao buscar todos os provões: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async associateProvaoToTurma(dto: { provaoId: string; turmaId: string }): Promise<void> {
+    const { error } = await supabase
+      .from('provoes_turmas')
+      .insert({
+        provao_id: dto.provaoId,
+        turma_id: dto.turmaId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // unique_violation
+        throw new Error('Este provão já está associado a esta turma.');
+      }
+      console.error('Erro ao associar provão à turma:', error);
+      throw new Error(`Falha ao associar provão à turma: ${error.message}`);
+    }
   }
 
   // ------------------ QUESTÕES ------------------
@@ -361,6 +393,41 @@ class DatabaseService {
     }
     
     return data
+  }
+
+  async deleteQuestao(questaoId: string): Promise<void> {
+    // Primeiro, remover o gabarito associado para evitar violação de FK
+    await supabase
+      .from('gabaritos')
+      .delete()
+      .eq('questao_id', questaoId);
+
+    // Depois, remover a questão
+    const { error } = await supabase
+      .from('questoes')
+      .delete()
+      .eq('id', questaoId);
+
+    if (error) {
+      console.error('Erro ao deletar questão:', error);
+      throw new Error(`Falha ao deletar questão: ${error.message}`);
+    }
+  }
+
+  async updateQuestao(questaoId: string, updates: { habilidade_codigo?: string; disciplina?: Disciplina }): Promise<Questao> {
+    const { data, error } = await supabase
+      .from('questoes')
+      .update(updates)
+      .eq('id', questaoId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar questão:', error);
+      throw new Error(`Falha ao atualizar questão: ${error.message}`);
+    }
+
+    return data;
   }
 
   // ------------------ GABARITOS ------------------
@@ -429,6 +496,19 @@ class DatabaseService {
     }
     
     return data;
+  }
+
+  async deleteScore(alunoId: string, questaoId: string): Promise<void> {
+    const { error } = await supabase
+      .from('scores')
+      .delete()
+      .eq('aluno_id', alunoId)
+      .eq('questao_id', questaoId);
+
+    if (error) {
+      console.error('Erro ao deletar score:', error);
+      throw new Error(`Falha ao deletar score: ${error.message}`);
+    }
   }
 
   // ------------------ MÉTODOS OTIMIZADOS PARA RESULTS ------------------

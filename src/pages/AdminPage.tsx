@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  ArrowLeft, 
   School, 
   Users, 
   BookOpen, 
@@ -32,16 +31,13 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
 
-interface AdminPageProps {
-  onNavigate: (page: 'home' | 'admin' | 'insert') => void;
-}
-
-const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
+const AdminPage: React.FC = () => {
   // States
   const [escolas, setEscolas] = useState<Escola[]>([]);
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
-  const [provoes, setProvoes] = useState<Provao[]>([]);
+  const [provoesNaTurma, setProvoesNaTurma] = useState<Provao[]>([]);
+  const [allProvoes, setAllProvoes] = useState<Provao[]>([]);
 
   // Form states
   const [newEscola, setNewEscola] = useState('');
@@ -66,8 +62,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [questoes, setQuestoes] = useState<Questao[]>([]);
 
   // Association states
-  const [alunoParaMatricular, setAlunoParaMatricular] = useState('');
+  const [alunosParaMatricular, setAlunosParaMatricular] = useState<string[]>([]);
   const [professorParaAssociar, setProfessorParaAssociar] = useState('');
+  const [provaoParaAssociar, setProvaoParaAssociar] = useState('');
 
   // Question form states
   const [newQuestaoHab, setNewQuestaoHab] = useState('');
@@ -105,6 +102,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         setEscolas(await dbService.getEscolas());
         setProfessores(await dbService.getProfessores());
         setAlunos(await dbService.getAlunos());
+        setAllProvoes(await dbService.getAllProvoes());
       } catch (error) {
         showNotification('Erro ao carregar dados iniciais.', 'error');
       }
@@ -156,14 +154,14 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         try {
           setAlunosNaTurma(await dbService.getAlunosByTurma(selectedTurma));
           setProfessoresNaTurma(await dbService.getProfessoresByTurma(selectedTurma));
-          setProvoes(await dbService.getProvoesByTurma(selectedTurma));
+          setProvoesNaTurma(await dbService.getProvoesByTurma(selectedTurma));
         } catch (error) {
           showNotification('Erro ao carregar detalhes da turma.', 'error');
         }
       } else {
         setAlunosNaTurma([]);
         setProfessoresNaTurma([]);
-        setProvoes([]);
+        setProvoesNaTurma([]);
       }
     };
     fetchTurmaDetails();
@@ -205,6 +203,19 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     const idsProfessoresNaTurma = new Set(professoresNaTurma.map(p => p.id));
     return professores.filter(p => !idsProfessoresNaTurma.has(p.id));
   }, [professores, professoresNaTurma]);
+
+  const provoesDisponiveisParaAssociar = useMemo(() => {
+    const idsProvoesNaTurma = new Set(provoesNaTurma.map(p => p.id));
+    return allProvoes.filter(p => !idsProvoesNaTurma.has(p.id));
+  }, [allProvoes, provoesNaTurma]);
+
+  const questoesComNumero = useMemo(() => {
+    const contadores: { [key in Disciplina]?: number } = {};
+    return questoes.map(q => {
+        contadores[q.disciplina] = (contadores[q.disciplina] || 0) + 1;
+        return { ...q, numero: contadores[q.disciplina] };
+    });
+  }, [questoes]);
 
   // Event Handlers
   const handleAddEscola = async (e: React.FormEvent) => {
@@ -294,19 +305,24 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleAlunosParaMatricularChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedIds = Array.from(e.target.selectedOptions, (option) => option.value);
+    setAlunosParaMatricular(selectedIds);
+  };
+
   const handleMatricularAluno = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (alunoParaMatricular && selectedTurma) {
+    if (alunosParaMatricular.length > 0 && selectedTurma) {
       try {
-        await dbService.addMatricula({ 
-          alunoId: alunoParaMatricular, 
-          turmaId: selectedTurma 
+        await dbService.addMatricula({
+          alunoIds: alunosParaMatricular,
+          turmaId: selectedTurma,
         });
         setAlunosNaTurma(await dbService.getAlunosByTurma(selectedTurma));
-        setAlunoParaMatricular('');
-        showNotification('Aluno matriculado com sucesso!');
-      } catch (error) {
-        showNotification('Erro ao matricular aluno.', 'error');
+        setAlunosParaMatricular([]);
+        showNotification(`${alunosParaMatricular.length} aluno(s) matriculado(s) com sucesso!`);
+      } catch (error: any) {
+        showNotification(error.message || 'Erro ao matricular alunos.', 'error');
       }
     }
   };
@@ -358,22 +374,38 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       showNotification('Por favor, insira um nome para o provão.', 'error');
       return;
     }
-    if (!selectedTurma) {
-      showNotification('Selecione uma turma para o provão.', 'error');
-      return;
-    }
 
     try {
       await dbService.addProvao({
         nome: newProvaoName.trim(),
-        turmaId: selectedTurma,
       });
 
       setNewProvaoName('');
-      setProvoes(await dbService.getProvoesByTurma(selectedTurma));
+      setAllProvoes(await dbService.getAllProvoes());
       showNotification('Provão criado com sucesso!');
     } catch (error) {
       showNotification('Erro ao criar provão.', 'error');
+    }
+  };
+
+  const handleAssociateProvao = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!provaoParaAssociar || !selectedTurma) {
+      showNotification('Selecione um provão e uma turma para associar.', 'error');
+      return;
+    }
+
+    try {
+      await dbService.associateProvaoToTurma({
+        provaoId: provaoParaAssociar,
+        turmaId: selectedTurma,
+      });
+
+      setProvoesNaTurma(await dbService.getProvoesByTurma(selectedTurma));
+      setProvaoParaAssociar('');
+      showNotification('Provão associado à turma com sucesso!');
+    } catch (error: any) {
+      showNotification(error.message || 'Erro ao associar provão.', 'error');
     }
   };
 
@@ -407,6 +439,50 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleDeleteQuestao = async (questaoId: string) => {
+    try {
+      await dbService.deleteQuestao(questaoId);
+      setQuestoes(prev => prev.filter(q => q.id !== questaoId));
+      showNotification('Questão deletada com sucesso!');
+    } catch (error) {
+      showNotification('Erro ao deletar questão.', 'error');
+    }
+  };
+
+  // Edit state and handlers
+  const [editingQuestaoId, setEditingQuestaoId] = useState<string | null>(null);
+  const [editingHabilidade, setEditingHabilidade] = useState('');
+  const [editingDisciplina, setEditingDisciplina] = useState<Disciplina>('Português');
+
+  const handleStartEditQuestao = (questao: Questao) => {
+    setEditingQuestaoId(questao.id);
+    setEditingHabilidade(questao.habilidade_codigo);
+    setEditingDisciplina(questao.disciplina);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestaoId(null);
+    setEditingHabilidade('');
+  };
+
+  const handleSaveQuestao = async (questaoId: string) => {
+    if (!editingHabilidade.trim()) {
+      showNotification('O código da habilidade não pode ficar vazio.', 'error');
+      return;
+    }
+    try {
+      const updatedQuestao = await dbService.updateQuestao(questaoId, {
+        habilidade_codigo: editingHabilidade.trim(),
+        disciplina: editingDisciplina,
+      });
+      setQuestoes(prev => prev.map(q => q.id === questaoId ? updatedQuestao : q));
+      handleCancelEdit();
+      showNotification('Questão atualizada com sucesso!');
+    } catch (error) {
+      showNotification('Erro ao atualizar questão.', 'error');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       {/* Notification */}
@@ -432,29 +508,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       )}
 
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button 
-            className="flex items-center gap-2 bg-white text-blue-600 hover:text-blue-800 px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-blue-200"
-            onClick={() => onNavigate('home')}
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Voltar para Home</span>
-          </button>
-          
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 flex items-center gap-3 justify-center">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl">
-                <GraduationCap size={40} className="text-white" />
-              </div>
-              Painel Administrativo
-            </h1>
-            <p className="text-gray-600 mt-2">Gerencie escolas, professores, alunos e provões</p>
-          </div>
-          
-          <div className="w-32"></div>
-        </div>
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
           {/* Coluna de Gerenciamento de Estrutura */}
@@ -737,24 +790,25 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     
                     <form onSubmit={handleMatricularAluno} className="flex gap-2">
                       <Select
-                        value={alunoParaMatricular}
-                        onChange={e => setAlunoParaMatricular(e.target.value)}
-                        className="flex-1 border-2 border-gray-200 focus:border-blue-500 rounded-xl"
+                        multiple
+                        value={alunosParaMatricular}
+                        onChange={handleAlunosParaMatricularChange}
+                        className="flex-1 border-2 border-gray-200 focus:border-blue-500 rounded-xl h-32"
                       >
-                        <option value="">Matricular aluno...</option>
+                        <option value="" disabled>Selecione um ou mais alunos...</option>
                         {alunosDisponiveis.map(a => (
                           <option key={a.id} value={a.id}>
                             {a.nome} ({a.matricula})
                           </option>
                         ))}
                       </Select>
-                      <Button 
-                        type="submit" 
-                        variant="success" 
-                        disabled={!alunoParaMatricular}
+                      <Button
+                        type="submit"
+                        variant="success"
+                        disabled={alunosParaMatricular.length === 0}
                         className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl px-4 disabled:opacity-50"
                       >
-                        Matricular
+                        Matricular Aluno(s)
                       </Button>
                     </form>
                   </div>
@@ -816,191 +870,284 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       </Button>
                     </form>
                   </div>
+
+                  {/* Provões na Turma */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">
+                      <div className="bg-cyan-100 p-1 rounded-lg">
+                        <FileText size={16} className="text-cyan-600" />
+                      </div>
+                      Provões Associados
+                      <span className="bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full">
+                        {provoesNaTurma.length}
+                      </span>
+                    </h3>
+
+                    <div className="max-h-24 overflow-y-auto border-2 border-gray-200 rounded-xl p-3 bg-gray-50 mb-3">
+                      {provoesNaTurma.length > 0 ? (
+                        provoesNaTurma.map(p => (
+                          <div key={p.id} className="flex justify-between items-center py-2 text-sm border-b border-gray-200 last:border-0">
+                            <span className="flex items-center gap-2">
+                              <FileText size={12} className="text-cyan-500" />
+                              {p.nome}
+                            </span>
+                            {/* Adicionar botão de desassociar se necessário no futuro */}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-2">
+                          Nenhum provão associado
+                        </p>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleAssociateProvao} className="flex gap-2">
+                      <Select
+                        value={provaoParaAssociar}
+                        onChange={e => setProvaoParaAssociar(e.target.value)}
+                        className="flex-1 border-2 border-gray-200 focus:border-cyan-500 rounded-xl"
+                      >
+                        <option value="">Associar provão existente...</option>
+                        {provoesDisponiveisParaAssociar.map(p => (
+                          <option key={p.id} value={p.id}>{p.nome}</option>
+                        ))}
+                      </Select>
+                      <Button
+                        type="submit"
+                        variant="success"
+                        disabled={!provaoParaAssociar}
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl px-4 disabled:opacity-50"
+                      >
+                        Associar Provão
+                      </Button>
+                    </form>
+                  </div>
                 </div>
               )}
             </Card>
           </div>
         </div>
 
-        {/* Sessão do Provão */}
-        <Card className="border-0 shadow-2xl bg-gradient-to-r from-orange-50 to-red-50">
+        {/* Sessão do Banco de Provões */}
+        <Card className="border-0 shadow-2xl bg-gradient-to-r from-cyan-50 to-blue-50">
           <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 rounded-2xl">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-4 rounded-2xl">
               <FileText className="text-white" size={32} />
             </div>
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-800">Gerenciar Provão</h2>
-              <p className="text-gray-600 mt-1">Crie e gerencie avaliações para suas turmas</p>
+              <h2 className="text-3xl font-bold text-gray-800">Banco de Provões</h2>
+              <p className="text-gray-600 mt-1">Crie e gerencie todas as avaliações do sistema</p>
             </div>
           </div>
 
-          {!selectedTurma ? (
-            <div className="text-center py-12">
-              <FileText size={64} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-xl text-gray-500 mb-2">Selecione uma turma acima</p>
-              <p className="text-gray-400">para gerenciar os provões.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Lado esquerdo - Criação e seleção */}
-              <div className="space-y-6">
-                {/* Criar Novo Provão */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Lado esquerdo - Criação e seleção */}
+            <div className="space-y-6">
+              {/* Criar Novo Provão */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="bg-green-100 p-1 rounded-lg">
+                    <Plus size={16} className="text-green-600" />
+                  </div>
+                  Criar Novo Provão Global
+                </h3>
+                <form onSubmit={handleAddProvao} className="space-y-4">
+                  <Input
+                    value={newProvaoName}
+                    onChange={e => setNewProvaoName(e.target.value)}
+                    placeholder="Nome do novo provão"
+                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl"
+                  />
+                  <Button
+                    type="submit"
+                    variant="success"
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl py-3 font-medium"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Criar Provão
+                  </Button>
+                </form>
+              </div>
+
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+
+              {/* Selecionar Provão para Edição */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="bg-blue-100 p-1 rounded-lg">
+                    <FileText size={16} className="text-blue-600" />
+                  </div>
+                  Editar Questões de um Provão
+                </h3>
+                <Select
+                  value={selectedProvao}
+                  onChange={e => setSelectedProvao(e.target.value)}
+                  className="w-full border-2 border-gray-200 focus:border-blue-500 rounded-xl"
+                >
+                  <option value="">Selecione um provão para editar</option>
+                  {allProvoes.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* Adicionar Questão */}
+              {selectedProvao && (
+                <div className="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-purple-500">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <div className="bg-green-100 p-1 rounded-lg">
-                      <Plus size={16} className="text-green-600" />
+                    <div className="bg-purple-100 p-1 rounded-lg">
+                      <Plus size={16} className="text-purple-600" />
                     </div>
-                    Criar Novo Provão
+                    Adicionar Questão
                   </h3>
-                  <form onSubmit={handleAddProvao} className="space-y-4">
+                  <form onSubmit={handleAddQuestao} className="space-y-4">
                     <Input
-                      value={newProvaoName}
-                      onChange={e => setNewProvaoName(e.target.value)}
-                      placeholder="Nome do novo provão"
-                      className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl"
+                      value={newQuestaoHab}
+                      onChange={e => setNewQuestaoHab(e.target.value)}
+                      placeholder="Código da habilidade (ex: EF15LP03)"
+                      className="w-full border-2 border-gray-200 focus:border-purple-500 rounded-xl"
                     />
+                    <Select
+                      value={newQuestaoDisciplina}
+                      onChange={e => setNewQuestaoDisciplina(e.target.value as Disciplina)}
+                      className="w-full border-2 border-gray-200 focus:border-purple-500 rounded-xl"
+                    >
+                      <option value="Português">📚 Português</option>
+                      <option value="Matemática">🧮 Matemática</option>
+                    </Select>
                     <Button 
                       type="submit" 
-                      variant="success" 
-                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl py-3 font-medium"
+                      className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl py-3 font-medium"
                     >
                       <Plus size={16} className="mr-2" />
-                      Criar Provão
+                      Adicionar Questão
                     </Button>
                   </form>
                 </div>
+              )}
+            </div>
 
-                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-
-                {/* Selecionar Provão */}
-                <div className="bg-white rounded-2xl p-6 shadow-lg">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <div className="bg-blue-100 p-1 rounded-lg">
-                      <FileText size={16} className="text-blue-600" />
-                    </div>
-                    Editar Provão Existente
-                  </h3>
-                  <Select
-                    value={selectedProvao}
-                    onChange={e => setSelectedProvao(e.target.value)}
-                    className="w-full border-2 border-gray-200 focus:border-blue-500 rounded-xl"
-                  >
-                    <option value="">Selecione um provão para editar</option>
-                    {provoes.map(p => (
-                      <option key={p.id} value={p.id}>{p.nome}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                {/* Adicionar Questão */}
-                {selectedProvao && (
-                  <div className="bg-white rounded-2xl p-6 shadow-lg border-t-4 border-purple-500">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <div className="bg-purple-100 p-1 rounded-lg">
-                        <Plus size={16} className="text-purple-600" />
-                      </div>
-                      Adicionar Questão
-                    </h3>
-                    <form onSubmit={handleAddQuestao} className="space-y-4">
-                      <Input
-                        value={newQuestaoHab}
-                        onChange={e => setNewQuestaoHab(e.target.value)}
-                        placeholder="Código da habilidade (ex: EF15LP03)"
-                        className="w-full border-2 border-gray-200 focus:border-purple-500 rounded-xl"
-                      />
-                      <Select
-                        value={newQuestaoDisciplina}
-                        onChange={e => setNewQuestaoDisciplina(e.target.value as Disciplina)}
-                        className="w-full border-2 border-gray-200 focus:border-purple-500 rounded-xl"
-                      >
-                        <option value="Português">📚 Português</option>
-                        <option value="Matemática">🧮 Matemática</option>
-                      </Select>
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl py-3 font-medium"
-                      >
-                        <Plus size={16} className="mr-2" />
-                        Adicionar Questão
-                      </Button>
-                    </form>
+            {/* Lado direito - Questões e Gabarito */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <div className="bg-orange-100 p-1 rounded-lg">
+                    <FileText size={16} className="text-orange-600" />
                   </div>
+                  Questões e Gabarito
+                </h3>
+                {questoes.length > 0 && (
+                  <span className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 text-sm px-3 py-1 rounded-full font-medium">
+                    {questoes.length} questões
+                  </span>
                 )}
               </div>
 
-              {/* Lado direito - Questões e Gabarito */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <div className="bg-orange-100 p-1 rounded-lg">
-                      <FileText size={16} className="text-orange-600" />
-                    </div>
-                    Questões e Gabarito
-                  </h3>
-                  {questoes.length > 0 && (
-                    <span className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 text-sm px-3 py-1 rounded-full font-medium">
-                      {questoes.length} questões
-                    </span>
-                  )}
-                </div>
-                
-                <div className="max-h-[34rem] overflow-y-auto space-y-4 pr-2">
-                  {questoes.length > 0 ? (
-                    questoes.map((q, index) => (
-                      <div key={q.id} className="bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl shadow-sm border-2 border-gray-100 hover:border-gray-200 transition-all duration-200">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">
-                                Questão {index + 1}
-                              </span>
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                q.disciplina === 'Português' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}>
-                                {q.disciplina === 'Português' ? '📚' : '🧮'} {q.disciplina}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 flex items-center gap-1">
-                              <Hash size={12} />
-                              Habilidade: <span className="font-mono font-medium">{q.habilidade_codigo}</span>
-                            </p>
+              <div className="max-h-[34rem] overflow-y-auto space-y-4 pr-2">
+                {questoesComNumero.length > 0 ? (
+                  questoesComNumero.map((q) => (
+                    <div key={q.id} className="bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl shadow-sm border-2 border-gray-100 hover:border-gray-200 transition-all duration-200">
+                      {editingQuestaoId === q.id ? (
+                        // Edit Mode
+                        <div className="space-y-3">
+                          <Input
+                            value={editingHabilidade}
+                            onChange={e => setEditingHabilidade(e.target.value)}
+                            className="w-full border-2 border-purple-300"
+                          />
+                          <Select
+                            value={editingDisciplina}
+                            onChange={e => setEditingDisciplina(e.target.value as Disciplina)}
+                            className="w-full border-2 border-purple-300"
+                          >
+                            <option value="Português">📚 Português</option>
+                            <option value="Matemática">🧮 Matemática</option>
+                          </Select>
+                          <div className="flex justify-end gap-2 mt-2">
+                            <Button size="sm" variant="secondary" onClick={handleCancelEdit}>
+                              Cancelar
+                            </Button>
+                            <Button size="sm" variant="success" onClick={() => handleSaveQuestao(q.id)}>
+                              Salvar
+                            </Button>
                           </div>
                         </div>
-                        
+                      ) : (
+                        // Display Mode
+                        <>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                  Questão {q.numero}
+                                </span>
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  q.disciplina === 'Português'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {q.disciplina === 'Português' ? '📚' : '🧮'} {q.disciplina}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <Hash size={12} />
+                                Habilidade: <span className="font-mono font-medium">{q.habilidade_codigo}</span>
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleStartEditQuestao(q)}
+                                className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100 transition-colors"
+                                title="Editar Questão"
+                              >
+                                <Plus size={16} className="rotate-45" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteQuestao(q.id)}
+                                className="text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-100 transition-colors"
+                                title="Excluir Questão"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-2 mt-4">
+                        </>
+                      )}
+
+                      {editingQuestaoId !== q.id && (
                         <div className="grid grid-cols-4 gap-2 mt-4">
-                          {(['A', 'B', 'C', 'D'] as Alternativa[]).map(alt => (
-                            <Button
-                              key={alt}
-                              size="sm"
-                              onClick={() => handleSetGabarito(q.id, alt)}
-                              className={`flex items-center justify-center gap-1 rounded-xl transition-all duration-200 ${
-                                gabaritos.get(q.id) === alt 
-                                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105' 
-                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                              }`}
-                            >
-                              <span className="font-bold">{alt}</span>
-                              {gabaritos.get(q.id) === alt && (
-                                <CheckCircle size={12} />
-                              )}
-                            </Button>
-                          ))}
-                        </div>
+                        {(['A', 'B', 'C', 'D'] as Alternativa[]).map(alt => (
+                          <Button
+                            key={alt}
+                            size="sm"
+                            onClick={() => handleSetGabarito(q.id, alt)}
+                            className={`flex items-center justify-center gap-1 rounded-xl transition-all duration-200 ${
+                              gabaritos.get(q.id) === alt
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            <span className="font-bold">{alt}</span>
+                            {gabaritos.get(q.id) === alt && (
+                              <CheckCircle size={12} />
+                            )}
+                          </Button>
+                        ))}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-12">
-                      <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                      <p className="text-gray-500 text-lg mb-1">Nenhuma questão adicionada ainda</p>
-                      <p className="text-sm text-gray-400">Selecione um provão e adicione questões.</p>
                     </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-lg mb-1">Nenhuma questão adicionada ainda</p>
+                    <p className="text-sm text-gray-400">Selecione um provão e adicione questões.</p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </Card>
       </div>
     </div>

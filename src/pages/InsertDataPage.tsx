@@ -1,8 +1,5 @@
 // src/pages/InsertDataPage.tsx
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft } from 'lucide-react';
-
 import dbService from '../services/dbService';
 import type { Escola, Serie, Turma, Aluno, Provao, Questao, Alternativa } from '../types';
 
@@ -10,11 +7,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Select from '../components/Select';
 
-interface InsertDataPageProps {
-  onNavigate: (page: 'home' | 'admin' | 'insert') => void;
-}
-
-const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
+const InsertDataPage: React.FC = () => {
     const [selectedEscola, setSelectedEscola] = useState('');
     const [selectedSerie, setSelectedSerie] = useState('');
     const [selectedTurma, setSelectedTurma] = useState('');
@@ -35,7 +28,6 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
     // UI states
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const fetchEscolas = async () => {
@@ -116,10 +108,8 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
             if (selectedProvao) {
                 try {
                     const data = await dbService.getQuestoesByProvao(selectedProvao);
-                    console.log('Questões carregadas:', data); // Para debug
                     setQuestoes(data);
                     
-                    // Carregar respostas existentes do aluno se já houver um aluno selecionado
                     if (selectedAluno && data.length > 0) {
                         const respostasExistentes: { [key: string]: Alternativa | null } = {};
                         for (const questao of data) {
@@ -129,7 +119,6 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
                                     respostasExistentes[questao.id] = score.resposta;
                                 }
                             } catch {
-                                // Ignora se não encontrar resposta existente
                                 respostasExistentes[questao.id] = null;
                             }
                         }
@@ -138,7 +127,6 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
                         setRespostas({});
                     }
                 } catch (err) {
-                    console.error('Erro ao carregar questões:', err);
                     setError('Falha ao buscar questões.');
                 }
             } else {
@@ -149,14 +137,13 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
         fetchQuestoes();
     }, [selectedProvao, selectedAluno]);
 
-    // Clear messages after 3 seconds
     useEffect(() => {
         if (success || error) {
-        const timer = setTimeout(() => {
-            setSuccess('');
-            setError('');
-        }, 3000);
-        return () => clearTimeout(timer);
+            const timer = setTimeout(() => {
+                setSuccess('');
+                setError('');
+            }, 3000);
+            return () => clearTimeout(timer);
         }
     }, [success, error]);
 
@@ -166,20 +153,30 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
             return;
         }
 
-        try {
-            await dbService.addScore({
-                alunoId: selectedAluno,
-                questaoId: questaoId,
-                resposta: valor
-            });
+        const respostaAtual = respostas[questaoId];
 
-            setRespostas((prev) => ({ ...prev, [questaoId]: valor }));
-            setSuccess('Resposta salva com sucesso!');
-        } catch (err) {
-            setError('Erro ao salvar resposta.');
-            console.error(err);
+        if (respostaAtual === valor) {
+            try {
+                await dbService.deleteScore(selectedAluno, questaoId);
+                setRespostas((prev) => ({ ...prev, [questaoId]: null }));
+                setSuccess('Resposta removida.');
+            } catch (err) {
+                setError('Erro ao remover resposta.');
+            }
+        } else {
+            try {
+                await dbService.addScore({
+                    alunoId: selectedAluno,
+                    questaoId: questaoId,
+                    resposta: valor
+                });
+                setRespostas((prev) => ({ ...prev, [questaoId]: valor }));
+                setSuccess('Resposta salva com sucesso!');
+            } catch (err) {
+                setError('Erro ao salvar resposta.');
+            }
         }
-    }, [selectedAluno]);
+    }, [selectedAluno, respostas]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -189,126 +186,100 @@ const InsertDataPage: React.FC<InsertDataPageProps> = ({ onNavigate }) => {
 
     const alternativas: Alternativa[] = ['A', 'B', 'C', 'D'];
 
+    return (
+        <div className="max-w-3xl mx-auto">
+            <Card>
+                <h2 className="text-2xl font-bold text-center text-slate-800 mb-6">
+                    Inserir Resultado das Questões
+                </h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Select label="Escola" value={selectedEscola} onChange={(e) => setSelectedEscola(e.target.value)}>
+                            <option value="">Selecione a Escola</option>
+                            {escolas.map(escola => (
+                                <option key={escola.id} value={escola.id}>{escola.nome}</option>
+                            ))}
+                        </Select>
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-left mb-8">
-          <button 
-            onClick={() => onNavigate('home')} 
-            className="text-blue-600 hover:underline flex items-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            Voltar para a Home
-          </button>
-        </div>
-        <Card>
-          <h2 className="text-2xl font-bold text-center text-slate-800 mb-6">
-            Inserir Resultado das Questões
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Escola</label>
-                <Select value={selectedEscola} onChange={(e) => setSelectedEscola(e.target.value)}>
-                  <option value="">Selecione a Escola</option>
-                  {escolas.map(escola => (
-                    <option key={escola.id} value={escola.id}>{escola.nome}</option>
-                  ))}
-                </Select>
-              </div>
+                        <Select label="Série/Ano" value={selectedSerie} onChange={(e) => setSelectedSerie(e.target.value)} disabled={!selectedEscola}>
+                            <option value="">Selecione a Série</option>
+                            {series.map(serie => (
+                                <option key={serie.id} value={serie.id}>{serie.nome}</option>
+                            ))}
+                        </Select>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Série/Ano</label>
-                <Select value={selectedSerie} onChange={(e) => setSelectedSerie(e.target.value)} disabled={!selectedEscola}>
-                  <option value="">Selecione a Série</option>
-                  {series.map(serie => (
-                    <option key={serie.id} value={serie.id}>{serie.nome}</option>
-                  ))}
-                </Select>
-              </div>
+                        <Select label="Turma" value={selectedTurma} onChange={(e) => setSelectedTurma(e.target.value)} disabled={!selectedSerie}>
+                            <option value="">Selecione a Turma</option>
+                            {turmas.map(turma => (
+                                <option key={turma.id} value={turma.id}>{turma.nome}</option>
+                            ))}
+                        </Select>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Turma</label>
-                <Select value={selectedTurma} onChange={(e) => setSelectedTurma(e.target.value)} disabled={!selectedSerie}>
-                  <option value="">Selecione a Turma</option>
-                  {turmas.map(turma => (
-                    <option key={turma.id} value={turma.id}>{turma.nome}</option>
-                  ))}
-                </Select>
-              </div>
+                        <Select label="Provão" value={selectedProvao} onChange={(e) => setSelectedProvao(e.target.value)} disabled={!selectedTurma}>
+                            <option value="">Selecione o Provão</option>
+                            {provoes.map(provao => (
+                                <option key={provao.id} value={provao.id}>{provao.nome}</option>
+                            ))}
+                        </Select>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Provão</label>
-                <Select value={selectedProvao} onChange={(e) => setSelectedProvao(e.target.value)} disabled={!selectedTurma}>
-                  <option value="">Selecione o Provão</option>
-                  {provoes.map(provao => (
-                    <option key={provao.id} value={provao.id}>{provao.nome}</option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Aluno(a)</label>
-                <Select value={selectedAluno} onChange={(e) => setSelectedAluno(e.target.value)} disabled={!selectedTurma}>
-                  <option value="">Selecione o Aluno</option>
-                  {alunos.map(aluno => (
-                    <option key={aluno.id} value={aluno.id}>{aluno.nome} ({aluno.matricula})</option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-
-            {selectedProvao && questoes.length > 0 && (
-              <div className="border-t pt-4 mt-4">
-                <label className="block text-base font-semibold text-gray-800 mb-3">Questões</label>
-                <div className="space-y-3">
-                  {questoes.map((q, index) => (
-                    <div key={q.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-md bg-gray-50 border">
-                      <div className="mb-2 sm:mb-0">
-                        <span className="font-mono text-sm font-medium text-gray-900">
-                          Questão {index + 1} - {q.habilidade_codigo}
-                        </span>
-                        <div className="text-xs text-gray-600">{q.disciplina}</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {alternativas.map(alt => (
-                          <button
-                            key={alt}
-                            type="button"
-                            onClick={() => handleRespostaChange(q.id, alt)}
-                            className={`w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-                              respostas[q.id] === alt 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            {alt}
-                          </button>
-                        ))}
-                      </div>
+                        <div className="md:col-span-2">
+                            <Select label="Aluno(a)" value={selectedAluno} onChange={(e) => setSelectedAluno(e.target.value)} disabled={!selectedTurma}>
+                                <option value="">Selecione o Aluno</option>
+                                {alunos.map(aluno => (
+                                    <option key={aluno.id} value={aluno.id}>{aluno.nome} ({aluno.matricula})</option>
+                                ))}
+                            </Select>
+                        </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            <div className="text-center pt-4">
-              {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-              {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
-              <div className="text-sm text-gray-600">
-                <p>As respostas são salvas automaticamente quando você clica nas alternativas.</p>
-                <p>Não é necessário clicar em "Salvar Dados" - use apenas para confirmação.</p>
-              </div>
-              <Button type="submit" className="mt-4">
-                Confirmar Finalização
-              </Button>
-            </div>
-          </form>
-        </Card>
-      </div>
-    </div>
-  );
+                    {selectedProvao && questoes.length > 0 && (
+                        <div className="border-t pt-4 mt-4">
+                            <label className="block text-base font-semibold text-gray-800 mb-3">Questões</label>
+                            <div className="space-y-3">
+                                {questoes.map((q, index) => (
+                                    <div key={q.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-md bg-gray-50 border">
+                                        <div className="mb-2 sm:mb-0">
+                                            <span className="font-mono text-sm font-medium text-gray-900">
+                                                Questão {index + 1} - {q.habilidade_codigo}
+                                            </span>
+                                            <div className="text-xs text-gray-600">{q.disciplina}</div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            {alternativas.map(alt => (
+                                                <button
+                                                    key={alt}
+                                                    type="button"
+                                                    onClick={() => handleRespostaChange(q.id, alt)}
+                                                    className={`w-8 h-8 rounded-full text-sm font-bold transition-colors ${
+                                                        respostas[q.id] === alt
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                    }`}
+                                                >
+                                                    {alt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="text-center pt-4">
+                        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                        {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
+                        <div className="text-sm text-gray-600">
+                            <p>As respostas são salvas automaticamente.</p>
+                        </div>
+                        <Button type="submit" className="mt-4">
+                            Confirmar Finalização
+                        </Button>
+                    </div>
+                </form>
+            </Card>
+        </div>
+    );
 };
 
 export default InsertDataPage;

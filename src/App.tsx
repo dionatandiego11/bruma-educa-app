@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import InsertDataPage from './pages/InsertDataPage';
 import ResultsPage from './pages/ResultsPage';
+import Layout from './components/Layout';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'insert' | 'results'>('home');
@@ -25,9 +26,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <>
+    <Layout activePage={currentPage} onNavigate={setCurrentPage}>
       {renderPage()}
-    </>
+    </Layout>
   );
 };
 
