@@ -978,7 +978,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                               className={`flex items-center justify-center gap-1 rounded-xl transition-all duration-200 ${
                                 gabaritos.get(q.id) === alt 
                                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105' 
-                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                  : 'bg-gray-700 hover:bg-gray-600 text-white'
                               }`}
                             >
                               <span className="font-bold">{alt}</span>
