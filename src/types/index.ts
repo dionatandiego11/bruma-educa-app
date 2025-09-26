@@ -17,17 +17,16 @@ export interface Escola extends BaseEntity {
   localizacao: "Urbano" | "Rural";
 }
 
-
 export interface Serie extends BaseEntity {
   nome: string;
   escola_id: string;
-  escola: Escola; // Para quando incluir relação
+  escola?: Escola; 
 }
 
 export interface Turma extends BaseEntity {
   nome: string;
   serie_id: string;
-  serie: Serie; // Para quando incluir relação
+  serie?: Serie;
 }
 
 export interface Professor extends BaseEntity {
@@ -41,64 +40,63 @@ export interface Aluno extends BaseEntity {
 
 export interface Provao extends BaseEntity {
   nome: string;
-  turma_id: string;
   data?: string;
   descricao?: string;
-  turma?: Turma; 
 }
 
 export interface Questao extends BaseEntity {
   provao_id: string;
   disciplina: Disciplina;
   habilidade_codigo: string;
-  provao: Provao; // Para quando incluir relação
+  ordem?: number;
+  provao?: Provao;
 }
 
 // Tabelas de relacionamento
 export interface Gabarito extends BaseEntity {
   questao_id: string;
   resposta_correta: Alternativa;
-  questao?: Questao; // Para quando incluir relação
+  questao?: Questao;
 }
 
 export interface Matricula extends BaseEntity {
   aluno_id: string;
   turma_id: string;
   ativo?: boolean;
-  aluno?: Aluno; // Para quando incluir relação
-  turma?: Turma; // Para quando incluir relação
+  aluno?: Aluno;
+  turma?: Turma;
 }
 
 export interface TurmaProfessor extends BaseEntity {
   turma_id: string;
-  turma?: Turma; // Para quando incluir relação
-  professor?: Professor; // Para quando incluir relação
+  professor_id: string;
+  turma?: Turma;
+  professor?: Professor;
 }
 
 export interface Score extends BaseEntity {
   aluno_id: string;
   questao_id: string;
   resposta: Alternativa;
-  aluno?: Aluno; // Para quando incluir relação
-  questao?: Questao; // Para quando incluir relação
+  aluno?: Aluno;
+  questao?: Questao;
 }
 
-// Tipos para formulários e DTOs - Corrigidos para compatibilidade
+// Tipos para formulários e DTOs
 export interface CreateEscolaDTO {
   nome: string;
   codigo_inep: string;
   localizacao: "Urbano" | "Rural";
 }
 
-
 export interface CreateSerieDTO {
   nome: string;
-  escolaId: string; // Corrigido para match com AdminPage
+  escolaId: string;
 }
 
 export interface CreateTurmaDTO {
   nome: string;
-  serieId: string; // Corrigido para match com AdminPage
+  serieId: string;
   professorIds?: string[]; 
 }
 
@@ -113,32 +111,37 @@ export interface CreateAlunoDTO {
 
 export interface CreateProvaoDTO {
   nome: string;
-  turmaId: string; // Corrigido para match com AdminPage
+  turmaIds: string[];
 }
 
+export interface UpdateProvaoDTO {
+  nome: string;
+  turmaIds: string[];
+}
+
+
 export interface CreateQuestaoDTO {
-  provaoId: string; // Corrigido para match com AdminPage
+  provaoId: string;
   disciplina: Disciplina;
-  descricao: string;
   habilidade_codigo: string;
-  ordem?: string;
+  ordem?: number;
 }
 
 export interface CreateGabaritoDTO {
-  questaoId: string; // Corrigido para match com AdminPage
-  respostaCorreta: Alternativa; // Corrigido para match com AdminPage
+  questaoId: string;
+  respostaCorreta: Alternativa;
 }
 
 export interface CreateMatriculaDTO {
-  alunoId: string; // Corrigido para match com AdminPage
-  turmaId: string; // Corrigido para match com AdminPage
+  alunoId: string;
+  turmaId: string;
   data_matricula?: string;
   ativo?: boolean;
 }
 
 export interface CreateScoreDTO {
-  alunoId: string; // Corrigido para match com InsertDataPage
-  questaoId: string; // Corrigido para match com InsertDataPage
+  alunoId: string;
+  questaoId: string;
   resposta: Alternativa;
   date?: string;
 }
@@ -155,7 +158,7 @@ export interface ProvaoComQuestoes extends Provao {
   questoes: Array<Questao & { gabarito?: Gabarito }>;
 }
 
-// Tipos para estatísticas e relatórios - Corrigidos
+// Tipos para estatísticas e relatórios
 export interface EstatisticasAluno {
   aluno: Aluno;
   total_questoes: number;
@@ -169,7 +172,6 @@ export interface EstatisticasAluno {
   }[];
 }
 
-// Corrigido para match com dbService
 export interface EstatisticasTurma {
   turma: Turma;
   total_alunos: number;
