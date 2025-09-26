@@ -6,7 +6,7 @@ import type {
   CreateEscolaDTO, CreateSerieDTO, CreateTurmaDTO, CreateAlunoDTO, CreateProfessorDTO,
   CreateProvaoDTO, UpdateProvaoDTO, CreateQuestaoDTO, CreateGabaritoDTO, CreateScoreDTO,
   EstatisticasAluno, EstatisticasTurma, Disciplina, Alternativa
-} from '../types/types';
+} from '../types';
 
 class DatabaseService {
 
@@ -41,6 +41,18 @@ class DatabaseService {
     }
     
     return data;
+  }
+
+  async deleteEscola(escolaId: string): Promise<void> {
+    const { error } = await supabase
+      .from('escolas')
+      .delete()
+      .eq('id', escolaId);
+
+    if (error) {
+      console.error('Erro ao deletar escola:', error);
+      throw new Error(`Falha ao deletar escola: ${error.message}`);
+    }
   }
 
   // ------------------ SÉRIES ------------------
@@ -78,6 +90,18 @@ class DatabaseService {
     }
     
     return data;
+  }
+
+  async deleteSerie(serieId: string): Promise<void> {
+    const { error } = await supabase
+      .from('series')
+      .delete()
+      .eq('id', serieId);
+
+    if (error) {
+      console.error('Erro ao deletar série:', error);
+      throw new Error(`Falha ao deletar série: ${error.message}`);
+    }
   }
 
   // ------------------ TURMAS ------------------
@@ -125,6 +149,18 @@ class DatabaseService {
     return data;
   }
 
+  async deleteTurma(turmaId: string): Promise<void> {
+    const { error } = await supabase
+      .from('turmas')
+      .delete()
+      .eq('id', turmaId);
+
+    if (error) {
+      console.error('Erro ao deletar turma:', error);
+      throw new Error(`Falha ao deletar turma: ${error.message}`);
+    }
+  }
+
   // ------------------ PROFESSORES ------------------
   async getProfessores(): Promise<Professor[]> {
     const { data, error } = await supabase
@@ -155,6 +191,18 @@ class DatabaseService {
     
     if (error) throw new Error(`Falha ao criar professor: ${error.message}`);
     return data;
+  }
+
+  async deleteProfessor(professorId: string): Promise<void> {
+    const { error } = await supabase
+      .from('professores')
+      .delete()
+      .eq('id', professorId);
+
+    if (error) {
+      console.error('Erro ao deletar professor:', error);
+      throw new Error(`Falha ao deletar professor: ${error.message}`);
+    }
   }
 
   async associateProfessorToTurma(dto: { professorId: string; turmaId: string }): Promise<TurmaProfessor> {
@@ -223,6 +271,18 @@ class DatabaseService {
     return data;
   }
 
+  async deleteAluno(alunoId: string): Promise<void> {
+    const { error } = await supabase
+      .from('alunos')
+      .delete()
+      .eq('id', alunoId);
+
+    if (error) {
+      console.error('Erro ao deletar aluno:', error);
+      throw new Error(`Falha ao deletar aluno: ${error.message}`);
+    }
+  }
+
   async addMatricula(dto: { alunoId: string; turmaId: string }): Promise<Matricula> {
     const { data, error } = await supabase
       .from('matriculas')
@@ -261,7 +321,7 @@ class DatabaseService {
 
   async getProvoesByTurma(turmaId: string): Promise<Provao[]> {
     const { data: provaoTurmas, error: ptError } = await supabase
-      .from('provao_turmas')
+      .from('provoes_turmas')
       .select('provao_id')
       .eq('turma_id', turmaId);
 
@@ -282,7 +342,7 @@ class DatabaseService {
   
   async getTurmaIdsByProvao(provaoId: string): Promise<string[]> {
     const { data, error } = await supabase
-      .from('provao_turmas')
+      .from('provoes_turmas')
       .select('turma_id')
       .eq('provao_id', provaoId);
     
@@ -305,7 +365,7 @@ class DatabaseService {
         turma_id: turmaId,
       }));
       
-      const { error: assocError } = await supabase.from('provao_turmas').insert(associations);
+      const { error: assocError } = await supabase.from('provoes_turmas').insert(associations);
       
       if (assocError) {
         await supabase.from('provoes').delete().eq('id', provaoData.id);
@@ -325,7 +385,7 @@ class DatabaseService {
     
     if (provaoError) throw new Error(`Falha ao atualizar nome do provão: ${provaoError.message}`);
 
-    const { error: deleteError } = await supabase.from('provao_turmas').delete().eq('provao_id', provaoId);
+    const { error: deleteError } = await supabase.from('provoes_turmas').delete().eq('provao_id', provaoId);
     if (deleteError) throw new Error(`Falha ao remover associações antigas: ${deleteError.message}`);
 
     if (dto.turmaIds && dto.turmaIds.length > 0) {
@@ -333,7 +393,7 @@ class DatabaseService {
           provao_id: provaoId,
           turma_id: turmaId,
         }));
-        const { error: insertError } = await supabase.from('provao_turmas').insert(associations);
+        const { error: insertError } = await supabase.from('provoes_turmas').insert(associations);
         if (insertError) throw new Error(`Falha ao criar novas associações: ${insertError.message}`);
     }
     return provaoData;
