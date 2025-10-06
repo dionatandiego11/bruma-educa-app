@@ -59,7 +59,7 @@ Siga estas instruções para configurar e executar sua própria instância do **
 1. **Clone o repositório**:
 
    ```bash
-   git clone https://github.com/your-username/educasys.git
+   git clone https://github.com/dionatandiego11/bruma-educa-app.git
    cd educasys
    ```
 
@@ -83,18 +83,10 @@ Siga estas instruções para configurar e executar sua própria instância do **
    const supabaseAnonKey = 'ey...'; // <-- SUA ANON KEY AQUI
    ```
 
-4. **Execute o servidor local de desenvolvimento**:
-
-   * O projeto pode ser executado diretamente em navegadores modernos com suporte a import maps.
-   * Para rodar localmente, use um servidor estático simples. Se você tiver o Node.js, instale o `serve`:
+4. **Rode o projeto em desenvolvimento**:
 
      ```bash
-     npm install -g serve
-     ```
-   * Execute o servidor no diretório raiz do projeto:
-
-     ```bash
-     serve .
+     npm run dev
      ```
    * Abra o navegador e acesse o endereço mostrado no terminal (geralmente `http://localhost:3000`).
 
