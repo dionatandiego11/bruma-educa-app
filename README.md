@@ -1,9 +1,8 @@
-# EducaSys: Sistema Aberto de Gestão de Avaliações Escolares
+# # EDUCA-BRUMA
 
-Sistema de Gestão de Provas e Avaliações Educacionais desenvolvido para a Secretaria de Educação de Brumadinho.
+[![React](https://img.shields.io/badge/React-18.x-blue?logo=react)](https://reactjs.org) [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-purple?logo=supabase)](https://supabase.com) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org)
 
-**Sobre o Projeto**
-O EDUCA-BRUMA é um sistema web completo para gestão de avaliações educacionais, permitindo o cadastro de escolas, turmas, alunos e professores, criação de provas (provões), registro de respostas e análise detalhada de resultados.
+*EDUCA-BRUMA* é um sistema web de gestão de provas e avaliações desenvolvido para a Secretaria de Educação de Brumadinho. Ele permite o gerenciamento completo de escolas, turmas, alunos, professores, provas (chamadas de "Provao"), questões e resultados de forma intuitiva e segura. O foco é na simplicidade para educadores e administradores, com suporte a autenticação, inserção de respostas e análise de desempenho.
 
 ## ✨ Funcionalidades
 
@@ -16,10 +15,10 @@ O EDUCA-BRUMA é um sistema web completo para gestão de avaliações educaciona
 
 ## 💻 Stack Tecnológica
 
-* **Frontend**: React, TypeScript, Tailwind CSS
-* **Backend e Banco de Dados**: Supabase (PostgreSQL)
-* **Roteamento**: React Router
-* **Ícones**: Lucide React
+- **Frontend**: React 18+ com TypeScript, React Router para roteamento.
+- **Estilização**: Tailwind CSS, Lucide React (ícones).
+- **Backend**: Supabase (PostgreSQL para banco, Auth para autenticação).
+- **Outras Bibliotecas**: Axios, Hooks personalizados para contexto e notificações.
 
 ---
 
@@ -149,6 +148,10 @@ Contribuições são bem-vindas! Para melhorar o **EducaSys**, siga os passos ab
 4. Faça as alterações e **commit** com mensagens claras e descritivas.
 5. **Envie (push)** suas alterações para seu fork.
 6. Crie um **Pull Request** para a branch `main` do repositório original.
+
+## 📞 Contato
+
+Desenvolvido para a Secretaria de Educação de Brumadinho. Para dúvidas ou sugestões, entre em contato via email: dionatan.pmb@gmail.com.
 
 ## 📄 Licença
 
