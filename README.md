@@ -2,7 +2,7 @@
 
 [![React](https://img.shields.io/badge/React-18.x-blue?logo=react)](https://reactjs.org) [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-purple?logo=supabase)](https://supabase.com) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org)
 
-*EDUCA-BRUMA* é um sistema web de gestão de provas e avaliações desenvolvido para a Secretaria de Educação de Brumadinho. Ele permite o gerenciamento completo de escolas, turmas, alunos, professores, provas (chamadas de "Provao"), questões e resultados de forma intuitiva e segura. O foco é na simplicidade para educadores e administradores, com suporte a autenticação, inserção de respostas e análise de desempenho.
+*EDUCA-BRUMA* é um sistema web de gestão de avaliações desenvolvido para a Secretaria de Educação de Brumadinho. Ele permite o gerenciamento completo de escolas, turmas, alunos, professores e provas de forma intuitiva e segura. O foco é na simplicidade para educadores e administradores, com suporte a autenticação, inserção de respostas e análise de desempenho.
 
 ## ✨ Funcionalidades
 
