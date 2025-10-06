@@ -1,111 +1,136 @@
-# Sistema Educacional Brumadinho
+# EducaSys: Open-Source School Assessment Management System
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-2.0-purple.svg)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.3-green.svg)](https://tailwindcss.com/)
+EducaSys is a modern, web-based platform designed to help municipal education departments manage schools, classes, students, and standardized tests (provões) efficiently. This open-source tool streamlines the entire assessment process, from creating exams and recording student answers to analyzing performance data in detail.
 
-Bem-vindo ao **Sistema Educacional Brumadinho**, uma aplicação web full-stack desenvolvida para gerenciar instituições educacionais, turmas, professores, alunos e avaliações (provões). O sistema permite a criação de provas reutilizáveis, inserção de respostas, análise de resultados e muito mais, com foco em usabilidade e escalabilidade.
+## ✨ Features
 
-## 📖 Descrição
+- **🏫 Administrative Dashboard**: Centrally manage schools, grades, classes, teachers, and students.
+- **📝 Exam Management**: Easily create new exams ("provões"), define questions, set answer keys (gabaritos), and associate exams with multiple classes.
+- **📊 Data Entry**: A streamlined interface for quickly inputting student answers for each assessment.
+- **📈 Results & Analysis**: Instantly view detailed results, including student rankings per class, overall performance metrics, and in-depth statistics for each question to identify learning gaps.
+- **🔒 Secure**: Built on Supabase with authentication and row-level security to protect student data.
+- **🌐 Web-Based**: Accessible from any modern web browser.
 
-Este sistema é uma solução para gestão de provas escolar, inspirada nas necessidades de escolas municipais de Brumadinho (MG). Ele suporta:
+## 💻 Tech Stack
 
-- **Gestão de Entidades**: Escolas, séries, turmas, professores e alunos.
-- **Criação de Avaliações**: Provões com questões por disciplina (Português e Matemática), incluindo gabaritos e edição/exclusão.
-- **Inserção de Dados**: Registro de respostas dos alunos com suporte a limpeza de seleções.
-- **Análise de Resultados**: Rankings, estatísticas por aluno/turma/disciplina e filtros avançados.
-- **Reutilização de Provas**: Crie uma prova uma vez e atribua-a a múltiplas turmas.
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Backend & Database**: Supabase (PostgreSQL)
+- **Routing**: React Router
+- **Icons**: Lucide React
 
-O frontend é construído em React com TypeScript, estilizado com Tailwind CSS e Lucide React para ícones. O backend usa Supabase para autenticação, banco de dados PostgreSQL e storage.
+---
 
-## ✨ Funcionalidades Principais
+## 🚀 Getting Started
 
-- **Painel Administrativo**: Adicione/editar/exclua escolas, séries, turmas, professores e alunos. Associe professores e matricule múltiplos alunos de uma vez.
-- **Criação de Provões**: Crie provas globais e atribua-as a turmas específicas. Adicione questões com códigos de habilidade (ex: EF15LP03) e defina gabaritos.
-- **Inserção de Respostas**: Interface intuitiva para registrar respostas, com visualização de gabaritos e opção para limpar seleções (sem resposta).
-- **Resultados e Análises**: 
-  - Contagem de questões por disciplina (não reinicia ao mudar de matéria).
-  - Filtros por disciplina e critérios adicionais.
-  - Rankings de alunos com percentuais por matéria.
-- **Layout Consistente**: Todas as páginas compartilham um design moderno com gradientes, cards e animações suaves.
-- **Notificações e Validações**: Feedback em tempo real para ações do usuário.
+Follow these instructions to set up and run your own instance of EducaSys.
 
-## 🛠️ Tecnologias Utilizadas
+### Prerequisites
 
-| Categoria       | Tecnologias |
-|-----------------|-------------|
-| **Frontend**    | React 18, TypeScript, Tailwind CSS, Lucide React |
-| **Backend/DB**  | Supabase (PostgreSQL, Auth, Realtime) |
-| **Outros**      | Vite (Build Tool), ESLint, Prettier |
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- A free [Supabase](https://supabase.com/) account
 
-## 🚀 Instalação
+### 1. Set Up Supabase Backend
 
-### Pré-requisitos
-- Node.js 18+ instalado.
-- Conta no [Supabase](https://supabase.com/) (crie um projeto e configure as variáveis de ambiente).
+1.  **Create a New Supabase Project**:
+    - Go to your [Supabase Dashboard](https://app.supabase.com/) and click "New project".
+    - Give your project a name (e.g., `educasys-municipio`) and create a strong database password. Save this password securely.
+    - Choose a region close to your users and click "Create project".
 
-### Passos
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seu-usuario/sistema-educacional-brumadinho.git
-   cd sistema-educacional-brumadinho
-   ```
+2.  **Set up the Database Schema**:
+    - Once your project is ready, navigate to the **SQL Editor** in the Supabase dashboard sidebar.
+    - Click **"+ New query"**.
+    - Open the `schema.sql` file from this repository, copy its entire content, and paste it into the Supabase SQL Editor.
+    - Click **"RUN"**. This will create all the necessary tables, relationships, and security policies for the application to work correctly.
 
-2. Instale as dependências:
-   ```bash
-   npm install
-   ```
+3.  **Get Your API Credentials**:
+    - In the Supabase dashboard, go to **Project Settings** (the gear icon).
+    - Click on the **API** section.
+    - You will find your **Project URL** and your **Project API Keys**. You only need the `anon` `public` key.
+    - Keep this page open; you will need these two values in the next step.
 
-3. Configure o Supabase:
-   - Crie um arquivo `.env.local` na raiz do projeto:
-     ```
-     VITE_SUPABASE_URL=your_supabase_url
-     VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-     ```
-   - No dashboard do Supabase, habilite as tabelas necessárias (escolas, series, turmas, etc.) conforme o schema em `src/types/index.ts`. Use o SQL Editor para rodar os scripts de inicialização se fornecido.
+### 2. Configure the Frontend Application
 
-4. Rode o projeto em modo de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/your-username/educasys.git
+    cd educasys
+    ```
 
-5. Acesse em `http://localhost:5173`.
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-### Build para Produção
-```bash
-npm run build
+3.  **Configure Supabase Credentials**:
+    - Open the file `src/services/supabaseClient.ts`.
+    - You will see two placeholder variables: `supabaseUrl` and `supabaseAnonKey`.
+    - Replace `'YOUR_SUPABASE_URL'` with the **Project URL** from your Supabase settings.
+    - Replace `'YOUR_SUPABASE_ANON_KEY'` with the `anon` `public` **Project API Key** from your Supabase settings.
+
+    Your `supabaseClient.ts` file should now look like this:
+
+    ```typescript
+    // src/services/supabaseClient.ts
+
+    import { createClient } from '@supabase/supabase-js';
+
+    const supabaseUrl = 'https://xxxxxx.supabase.co'; // <-- YOUR URL HERE
+    const supabaseAnonKey = 'ey...'; // <-- YOUR ANON KEY HERE
+
+    // ... rest of the file
+    ```
+
+4.  **Run the Development Server**:
+    - This project is set up to run directly in a modern browser that supports import maps. To serve it locally, you can use any simple static server. If you have Node.js, `serve` is a great option.
+    - Install `serve`:
+      ```bash
+      npm install -g serve
+      ```
+    - Run the server from the root of the project directory:
+      ```bash
+      serve .
+      ```
+    - Open your browser and navigate to the URL provided by the `serve` command (usually `http://localhost:3000`).
+
+### 3. First Login
+
+The application is now running! The first user to sign up will be the initial administrator.
+*Note: The SQL schema does not create any default users. You need to create an account through Supabase Auth or your application's sign-up flow (if implemented).*
+
+To create your first user:
+1.  Go to your Supabase project's **Authentication** section.
+2.  Click **"Add user"** and create a user with an email and password.
+3.  You can now use these credentials to log into the application.
+
+## 🏗️ Project Structure
+
 ```
-O build estará em `dist/`. Hospede em Vercel, Netlify ou similar.
+/
+├── public/
+│   └── ...
+├── src/
+│   ├── components/    # Reusable React components (Button, Card, etc.)
+│   ├── hooks/         # Custom React hooks (useAuth, useNotification)
+│   ├── pages/         # Top-level page components for each route
+│   ├── services/      # API/DB services (dbService.ts, supabaseClient.ts)
+│   ├── App.tsx        # Main application component with routing
+│   ├── index.tsx      # Entry point of the React application
+│   └── types.ts       # Centralized TypeScript types and interfaces
+└── README.md
+```
 
-## 📱 Uso
+## 🤝 Contributing
 
-1. **Home**: Navegue para as seções principais (Admin, Inserir Dados, Resultados).
-2. **Admin**: Crie entidades e configure provões. Use o MultiSelect para matricular múltiplos alunos.
-3. **Inserir Dados**: Selecione turma/aluno/provão e registre respostas. Clique em alternativas ou no "X" para limpar.
-4. **Resultados**: Filtre por escola/série/turma/provão/disciplina e visualize rankings/estatísticas.
+Contributions are welcome! If you'd like to improve EducaSys, please follow these steps:
 
-### Exemplo de Fluxo
-- Crie uma escola > Série > Turma.
-- Adicione alunos e matricule-os.
-- Crie um provão global > Atribua à turma > Adicione questões e gabaritos.
-- Insira respostas > Analise resultados.
+1.  **Fork** the repository on GitHub.
+2.  **Clone** your forked repository to your local machine.
+3.  Create a new **branch** for your feature or bug fix.
+4.  Make your changes and **commit** them with clear, descriptive messages.
+5.  **Push** your changes to your fork.
+6.  Create a **Pull Request** to the `main` branch of the original repository.
 
-## 🤝 Contribuições
+## 📄 License
 
-Contribuições são bem-vindas! Siga estes passos:
-
-1. Fork o projeto.
-2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`).
-3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`).
-4. Push para a branch (`git push origin feature/nova-funcionalidade`).
-5. Abra um Pull Request.
-
-### Convenções de Commit
-- Use [Conventional Commits](https://www.conventionalcommits.org/): `feat: adiciona filtro por disciplina`, `fix: corrige bug em gabarito`.
-
-## 📄 Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE). Veja o arquivo LICENSE para detalhes.
-
-Obrigado por usar o Sistema Educacional Brumadinho! 🎓
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.

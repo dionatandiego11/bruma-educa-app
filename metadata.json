@@ -1,0 +1,5 @@
+{
+  "name": "EducaSys: School Assessment Management System",
+  "description": "A comprehensive open-source system for managing schools, classes, students, and exams. Create exams, input results, and analyze performance data for your municipality's education department.",
+  "requestFramePermissions": []
+}
